@@ -11,5 +11,4 @@ public class RainZubinRingCounterApplication {
     public static void main(String[] args) {
         Application.launch(RingCounter.class, args);
     }
-
 }

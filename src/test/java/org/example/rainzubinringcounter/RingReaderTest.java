@@ -4,7 +4,8 @@ import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.HashMap;
+
 @SpringBootTest
 class RingReaderTest {
     @Resource
@@ -12,12 +13,11 @@ class RingReaderTest {
 
     @Test
     public void TestToReadTheFile(){
+        //String pathToTheFile = "C:\\Users\\nikit\\IdeaProjects\\Rain-ZubinRingCounter\\Documents\\NARUTO - S01E05.docx";
         String pathToTheFile = "C:\\Users\\nikit\\IdeaProjects\\Rain-ZubinRingCounter\\Documents\\NARUTO - S01E12.docx";
-        ringReader.reader(pathToTheFile);
+
+        HashMap<String, Integer> stringIntegerHashtable = ringReader.reader(pathToTheFile);
+
         assert pathToTheFile.endsWith(".docx");
     }
-
-
-
-
 }
