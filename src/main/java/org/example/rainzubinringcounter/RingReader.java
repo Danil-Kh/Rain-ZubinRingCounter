@@ -1,5 +1,6 @@
 package org.example.rainzubinringcounter;
 
+import jakarta.annotation.Resource;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xwpf.usermodel.*;
@@ -13,12 +14,19 @@ import java.util.*;
 @Slf4j
 @Service
 public class RingReader {
-    private static final Integer MIN_WORDS_TO_RING = 3;
-    private final List<Ring> ringList = new ArrayList<>();
-    private HashMap<String, Integer> hashMap;
 
-    public HashMap<String, Integer> reader (String docxPath){
-        hashMap = new HashMap<>();
+    @Resource
+    GlobalHashMap hashMap;
+
+    private static final Integer MIN_WORDS_TO_RING = 3;
+    private List<Ring> ringList;
+
+    public HashMap<String, Integer> reader (String docxPath, boolean calculateTheSumOfRings){
+        ringList = new ArrayList<>();
+        if (!calculateTheSumOfRings){
+            hashMap.getHashMap().clear();
+        }
+
         try (FileInputStream fis = new FileInputStream(docxPath);
             XWPFDocument document = new XWPFDocument(fis)) {
             if (document.getTables().isEmpty()) {
@@ -30,21 +38,21 @@ public class RingReader {
             }
 
             for (Ring ring : ringList) {
-                if (hashMap.containsKey(ring.getName())) {
-                    hashMap.put(ring.getName(), hashMap.get(ring.getName()) + 1);
+                if (hashMap.getHashMap().containsKey(ring.getName())) {
+                    hashMap.getHashMap().put(ring.getName(), hashMap.getHashMap().get(ring.getName()) + 1);
                 } else {
-                    hashMap.put(ring.getName(), 1);
+                    hashMap.getHashMap().put(ring.getName(), 1);
                 }
             }
             System.out.println("=== Ring Name Frequency ===");
-            for (Map.Entry<String, Integer> entry : hashMap.entrySet()) {
+            for (Map.Entry<String, Integer> entry : hashMap.getHashMap().entrySet()) {
                 System.out.println(entry.getKey() + ": " + entry.getValue());
             }
 
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return hashMap;
+        return hashMap.getHashMap();
 
     }
 

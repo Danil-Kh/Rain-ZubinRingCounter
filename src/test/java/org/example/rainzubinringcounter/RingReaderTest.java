@@ -13,10 +13,11 @@ class RingReaderTest {
 
     @Test
     public void TestToReadTheFile(){
-        //String pathToTheFile = "C:\\Users\\nikit\\IdeaProjects\\Rain-ZubinRingCounter\\Documents\\NARUTO - S01E05.docx";
-        String pathToTheFile = "C:\\Users\\nikit\\IdeaProjects\\Rain-ZubinRingCounter\\Documents\\NARUTO - S01E12.docx";
+        String pathToTheFile = "C:\\Users\\nikit\\IdeaProjects\\Rain-ZubinRingCounter\\Documents\\NARUTO - S01E05.docx";
+        String pathToTheFile1 = "C:\\Users\\nikit\\IdeaProjects\\Rain-ZubinRingCounter\\Documents\\NARUTO - S01E12.docx";
 
-        HashMap<String, Integer> stringIntegerHashtable = ringReader.reader(pathToTheFile);
+        HashMap<String, Integer> stringIntegerHashtable = ringReader.reader(pathToTheFile, true);
+        HashMap<String, Integer> stringIntegerHashtable1 = ringReader.reader(pathToTheFile1, true);
 
         assert pathToTheFile.endsWith(".docx");
     }
