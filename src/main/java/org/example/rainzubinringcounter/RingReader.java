@@ -4,6 +4,7 @@ import jakarta.annotation.Resource;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xwpf.usermodel.*;
+
 import org.springframework.stereotype.Service;
 
 import java.io.FileInputStream;
@@ -20,6 +21,7 @@ public class RingReader {
 
     private static final Integer MIN_WORDS_TO_RING = 3;
     private List<Ring> ringList;
+
 
     public HashMap<String, Integer> reader (String docxPath, boolean calculateTheSumOfRings){
         ringList = new ArrayList<>();
