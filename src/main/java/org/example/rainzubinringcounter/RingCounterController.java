@@ -17,6 +17,7 @@ import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.example.rainzubinringcounter.exception.ExceptionMessage;
 import org.example.rainzubinringcounter.exception.GlobalExceptionHandler;
 import org.example.rainzubinringcounter.exception.IncorrectFileFormatException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import java.io.File;
@@ -40,12 +41,7 @@ public class RingCounterController {
     StringBuilder sb = new StringBuilder();
     private final FileChooser fileChooser = new FileChooser();
 
-    @Resource
     RingReader ringReader = new RingReader();
-
-
-
-
 
 
     @FXML
@@ -74,21 +70,16 @@ public class RingCounterController {
             boolean success = false;
             HashMap<String, Integer> hashMap = new HashMap<>();
 
-
-
-
             if (db.hasFiles()) {
                 success = true;
                 for (File file : db.getFiles()) {
-                   ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
-                   hashMap = ringReader.hashMap.getHashMap();
+                    hashMap = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
 
                     for (String key : hashMap.keySet()) {
                         sb.append(key).append(": ").append(hashMap.get(key)).append("\n");
                     }
 
                     textArea.appendText(sb.toString());
-
 
                     try {
                         createDocument(sb);
