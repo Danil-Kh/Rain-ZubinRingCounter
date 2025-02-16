@@ -56,14 +56,17 @@ public class RingReader {
         for (XWPFParagraph paragraph : document.getParagraphs()) {
             String word = paragraph.getText();
             String[] words = word.split("\\s+");
-            if (isValidDouble(words[0])){
+            if (isValidDouble(words[0]) && words[0] != "") {
                 if (words.length >= MIN_WORDS_TO_RING) {
                     Ring ring = new Ring(words[0], words[1], words[2]);
                     ringList.add(ring);
                 }
             }
             else  {
-                System.out.println("Invalid time code: " + words[0] + " " + "in the sentence: " + words[0] + " " + words[1] + " " + words[2]);
+                if (!Objects.equals(words[0], "") && words.length >= MIN_WORDS_TO_RING)
+                {
+                    System.out.println("Invalid time code: " + words[0] + " " + "in the sentence: " + words[0] + " " + words[1] + " " + words[2]);
+                }
                 //throw new RuntimeException("Invalid time code: " + words[0] + " " + "in the sentence: " + words[0] + " " + words[1] + " " + words[2]);
             }
         }
@@ -84,21 +87,27 @@ public class RingReader {
                         Ring ring = new Ring(time, name, phrase);
                         ringList.add(ring);
                     }
+                    else  {
+                        System.out.println("Invalid time code: " + t + " " + "in the sentence: " + t + " " + n + " " + p);
+                    }
                 } else {
-                    System.out.println("Invalid time code: " + t + " " + "in the sentence: " + t + " " + n + " " + p);
+                    System.out.println("Invalid structure of the sentence in: " + t + " " + "in the sentence: " + t + " " + n + " " + p);
                     //throw new RuntimeException("Invalid time code: " + t + " " + "in the sentence: " + t + " " + n + " " + p);
                 }
             }
         }
     }
 
-    public static boolean isValidDouble(String str) {
+    private static boolean isValidDouble(String str) {
+        if (!str.matches("\\d{2}[:;,\\.]\\d{2}")) {
+            return false;
+        }
+        String standardizedStr = str.replace(':', '.').replace(',', '.').replace(';', '.');
         try {
-            Double.parseDouble(str);
+            Double.parseDouble(standardizedStr);
             return true;
         } catch (NumberFormatException e) {
             return false;
         }
     }
-
 }

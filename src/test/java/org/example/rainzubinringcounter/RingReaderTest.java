@@ -19,9 +19,10 @@ class RingReaderTest {
         String pathToTheFile1 = "C:\\Users\\nikit\\IdeaProjects\\Rain-ZubinRingCounter\\Documents\\NARUTO - S01E12.docx";
 
         String pathToTheFile2 = "C:\\Users\\nikit\\IdeaProjects\\Rain-ZubinRingCounter\\Documents\\NARUTO - S01E12damage.docx";
+        String pathToTheFile3 = "C:\\Users\\nikit\\IdeaProjects\\Rain-ZubinRingCounter\\Documents\\Slenderman_ukr.docx";
 
-        HashMap<String, Integer> stringIntegerHashtable = ringReader.reader(pathToTheFile1, true);
-        HashMap<String, Integer> stringIntegerHashtable1 = ringReader.reader(pathToTheFile1, true);
+        HashMap<String, Integer> stringIntegerHashtable = ringReader.reader(pathToTheFile3, true);
+        HashMap<String, Integer> stringIntegerHashtable1 = ringReader.reader(pathToTheFile3, true);
 
         assert stringIntegerHashtable.equals(stringIntegerHashtable1);
     }
