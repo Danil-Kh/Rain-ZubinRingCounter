@@ -24,4 +24,4 @@ jobs:
     
 
     - name: Build and Run Tests with Maven
-      run: mvn -B clean verify --file web-api-lesson/pom.xml
+      run: mvn -B clean verify --file pom.xml
