@@ -110,14 +110,18 @@ public class RingCounterController {
             }
             event.setDropCompleted(success);
 
+
             event.consume();
+
 
         });
 
         sumFile.setOnAction(event -> {
+
             if (sumFile.isSelected()) {
                 ringReader.hashMap.clear();
             }
+
         });
 
 }
