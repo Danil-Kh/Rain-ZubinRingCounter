@@ -3,12 +3,59 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.TextArea?>
+<?import javafx.scene.effect.DropShadow?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.Circle?>
+<?import javafx.scene.text.Text?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.rainzubinringcounter.RingCounterController">
-   <Button fx:id="fileChooserButton" layoutX="25.0" layoutY="343.0" mnemonicParsing="false" text="Button" />
-   <Circle fx:id="circleDrag" layoutX="114.0" layoutY="175.0" radius="100.0" stroke="BLACK" strokeType="INSIDE" />
-   <TextArea fx:id="textArea" layoutX="248.0" layoutY="14.0" prefHeight="368.0" prefWidth="338.0" />
-   <CheckBox fx:id="sumFile" layoutX="24.0" layoutY="25.0" mnemonicParsing="false" text="Suma " />
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
+            prefHeight="1000.0" prefWidth="1500.0"
+            style="-fx-background-color: linear-gradient(to bottom right, #f0f2f5, #ffffff);"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.example.rainzubinringcounter.RingCounterController">
+
+   <Text layoutX="50.0" layoutY="80.0"
+         style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-fill: #2c3e50;"
+         text="Ring Counter" />
+
+   <VBox alignment="CENTER" layoutX="200.0" layoutY="200.0" spacing="20">
+      <Circle fx:id="circleDrag" radius="120.0"
+              style="-fx-fill: linear-gradient(to bottom right, #4a90e2, #357abd); -fx-stroke: white; -fx-stroke-width: 2;">
+         <effect>
+            <DropShadow color="#00000066" radius="10" spread="0.1" />
+         </effect>
+      </Circle>
+
+      <Text style="-fx-font-size: 16px; -fx-fill: #666666;"
+            text="Drag files here" />
+   </VBox>
+
+   <VBox layoutX="600.0" layoutY="150.0" prefWidth="800.0" spacing="20">
+      <TextArea fx:id="textArea"
+                prefHeight="600.0" prefWidth="800.0"
+                promptText="Information about uploaded files will appear here..."
+                style="-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-background-radius: 5;"
+                wrapText="true">
+         <effect>
+            <DropShadow color="#00000022" radius="5" spread="0.05" />
+         </effect>
+      </TextArea>
+
+      <HBox alignment="CENTER_LEFT" spacing="20">
+         <CheckBox fx:id="sumFile"
+                   style="-fx-font-size: 14px; -fx-text-fill: #2c3e50;"
+                   text="Summarize files" />
+
+         <Button fx:id="fileChooserButton"
+                 style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 10 20; -fx-background-radius: 5; -fx-cursor: hand;"
+                 text="Select file">
+            <effect>
+               <DropShadow color="#00000044" radius="5" spread="0.05" />
+            </effect>
+         </Button>
+      </HBox>
+   </VBox>
+
 </AnchorPane>

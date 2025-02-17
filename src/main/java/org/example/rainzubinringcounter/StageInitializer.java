@@ -26,7 +26,7 @@ public class StageInitializer implements ApplicationListener<RingCounter.StageRe
           FXMLLoader fxmlLoader =  new FXMLLoader(ringCounter.getURL());//TODO: add to error catcher
             Parent parent = fxmlLoader.load();
             Stage stage = event.getStage();
-            stage.setScene(new Scene(parent, 800, 600));
+            stage.setScene(new Scene(parent, 1500, 1000));
             stage.show();
         } catch (IOException e) {
             throw new RuntimeException(e);

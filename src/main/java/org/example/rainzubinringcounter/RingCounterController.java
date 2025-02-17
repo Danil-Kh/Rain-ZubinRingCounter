@@ -13,6 +13,7 @@ import javafx.scene.shape.Circle;
 import javafx.stage.FileChooser;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.example.rainzubinringcounter.exception.ExceptionMessage;
 import org.example.rainzubinringcounter.exception.GlobalExceptionHandler;
@@ -23,7 +24,9 @@ import org.springframework.stereotype.Controller;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.UUID;
 
 @Controller
 public class RingCounterController {
@@ -46,8 +49,26 @@ public class RingCounterController {
     @FXML
     private void initialize() {
         fileChooserButton.setOnAction(event -> {
+            StringBuilder sb = new StringBuilder();
+            textArea.clear();
             File file = fileChooser.showOpenDialog(fileChooserButton.getScene().getWindow());
-            System.out.println("file = " + file);
+
+                HashMap<String, Integer> hashMap;
+                hashMap = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
+                sb.append(file.getName()).append("\n");
+                for (String key : hashMap.keySet()) {
+                    sb.append(key).append(": ").append(hashMap.get(key)).append("\n");
+                }
+
+                textArea.appendText(sb.toString());
+
+                try {
+                    createDocument(sb, file.getName());
+                } catch (IncorrectFileFormatException e) {
+                    globalExceptionHandler.handleException(e);
+                }
+                sb.setLength(0);
+
         });
         circleDrag.setOnDragDetected(event -> {
             System.out.println("\"file detected \" = " + "file detected ");
@@ -84,7 +105,7 @@ public class RingCounterController {
                     textArea.appendText(sb.toString());
 
                     try {
-                        createDocument(sb);
+                        createDocument(sb, file.getName());
                     } catch (IncorrectFileFormatException e) {
                         globalExceptionHandler.handleException(e);
                     }
@@ -103,7 +124,7 @@ public class RingCounterController {
                 textArea.appendText(sb.toString());
 
                 try {
-                    createDocument(sb);
+                    createDocument(sb, db.getFiles().getFirst().getName());
                 } catch (IncorrectFileFormatException e) {
                     globalExceptionHandler.handleException(e);
                 }
@@ -126,15 +147,37 @@ public class RingCounterController {
 
 }
 
-    private void createDocument(StringBuilder sb) throws IncorrectFileFormatException {
+    private void createDocument(StringBuilder sb, String fileName) throws IncorrectFileFormatException {
         try {
-            FileOutputStream fileOutputStream = new FileOutputStream("test.docx");
-            XWPFRun run = xwpfDocument.createParagraph().createRun();
-            run.setText(sb.toString());
+            String userHome = System.getProperty("user.home");
+            String dirPath = Paths.get(userHome, "Documents", "GeneratedDocs").toString();
+            File dir = new File(dirPath);
+
+            boolean dirCreated = dir.mkdirs();
+            if (!dir.exists() && !dirCreated) {
+                throw new IOException("Failed to create directory: " + dirPath);
+            }
+
+            String filename = Paths.get(dirPath, "ring_" + fileName + ".docx").toString();
+            FileOutputStream fileOutputStream = new FileOutputStream(filename);
+
+            XWPFDocument xwpfDocument = new XWPFDocument();
+
+
+            String[] lines = sb.toString().split("\n");
+            for (String line : lines) {
+                XWPFParagraph paragraph = xwpfDocument.createParagraph();
+                XWPFRun run = paragraph.createRun();
+                run.setText(line);
+            }
+
             xwpfDocument.write(fileOutputStream);
+            fileOutputStream.close();
 
         } catch (IOException e) {
+            e.printStackTrace();
             throw new IncorrectFileFormatException(ExceptionMessage.INCORRECT_FILE_FORMAT.toString());
         }
     }
+
 }
