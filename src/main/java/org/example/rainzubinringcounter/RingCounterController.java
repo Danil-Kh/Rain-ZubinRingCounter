@@ -38,7 +38,6 @@ public class RingCounterController {
     @FXML
     public Button fileChooserButton;
     private final XWPFDocument xwpfDocument = new XWPFDocument();
-    StringBuilder sb = new StringBuilder();
     private final FileChooser fileChooser = new FileChooser();
 
     RingReader ringReader = new RingReader();
@@ -68,13 +67,16 @@ public class RingCounterController {
         circleDrag.setOnDragDropped(event -> {
             Dragboard db = event.getDragboard();
             boolean success = false;
-            HashMap<String, Integer> hashMap = new HashMap<>();
+            textArea.clear();
+            StringBuilder sb = new StringBuilder();
 
-            if (db.hasFiles()) {
+            if (db.hasFiles() && !sumFile.isSelected()) {
+
                 success = true;
                 for (File file : db.getFiles()) {
+                    HashMap<String, Integer> hashMap;
                     hashMap = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
-
+                        sb.append(file.getName()).append("\n");
                     for (String key : hashMap.keySet()) {
                         sb.append(key).append(": ").append(hashMap.get(key)).append("\n");
                     }
@@ -86,8 +88,24 @@ public class RingCounterController {
                     } catch (IncorrectFileFormatException e) {
                         globalExceptionHandler.handleException(e);
                     }
+                    sb.setLength(0);
 
+                }
+            }else {
+                success = true;
+                HashMap<String, Integer> hashMap = new HashMap<>();
+                for (File file : db.getFiles()) {
+                    hashMap = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
+                }
+                for (String key : hashMap.keySet()) {
+                    sb.append(key).append(": ").append(hashMap.get(key)).append("\n");
+                }
+                textArea.appendText(sb.toString());
 
+                try {
+                    createDocument(sb);
+                } catch (IncorrectFileFormatException e) {
+                    globalExceptionHandler.handleException(e);
                 }
             }
             event.setDropCompleted(success);
@@ -95,6 +113,13 @@ public class RingCounterController {
             event.consume();
 
         });
+
+        sumFile.setOnAction(event -> {
+            if (sumFile.isSelected()) {
+                ringReader.hashMap.clear();
+            }
+        });
+
 }
 
     private void createDocument(StringBuilder sb) throws IncorrectFileFormatException {

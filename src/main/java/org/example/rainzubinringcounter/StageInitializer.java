@@ -17,7 +17,7 @@ import java.io.IOException;
 
 @Component
 public class StageInitializer implements ApplicationListener<RingCounter.StageReadyEvent>{
-    @Value("classpath:/ringCounter.fxml")
+    @Value("classpath:/ringcounter.fxml")
     private Resource ringCounter;
 
     @Override
