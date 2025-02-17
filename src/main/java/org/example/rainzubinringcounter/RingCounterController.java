@@ -53,9 +53,18 @@ public class RingCounterController {
             textArea.clear();
             File file = fileChooser.showOpenDialog(fileChooserButton.getScene().getWindow());
 
+            if (file != null) {
+                String fileName = file.getName();
+                if (!fileName.toLowerCase().endsWith(".docx")) {
+                    globalExceptionHandler.handleException(
+                            new IncorrectFileFormatException(ExceptionMessage.INVALID_FILE_FORMAT.getMessage())
+                    );
+                    return;
+                }
+
                 HashMap<String, Integer> hashMap;
                 hashMap = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
-                sb.append(file.getName()).append("\n");
+                sb.append(fileName).append("\n");
                 for (String key : hashMap.keySet()) {
                     sb.append(key).append(": ").append(hashMap.get(key)).append("\n");
                 }
@@ -63,12 +72,14 @@ public class RingCounterController {
                 textArea.appendText(sb.toString());
 
                 try {
-                    createDocument(sb, file.getName());
+                    createDocument(sb, fileName);
                 } catch (IncorrectFileFormatException e) {
-                    globalExceptionHandler.handleException(e);
+                    globalExceptionHandler.handleException(
+                            new IncorrectFileFormatException(ExceptionMessage.INCORRECT_FILE_FORMAT.getMessage())
+                    );
                 }
                 sb.setLength(0);
-
+            }
         });
         circleDrag.setOnDragDetected(event -> {
             System.out.println("\"file detected \" = " + "file detected ");
@@ -95,6 +106,9 @@ public class RingCounterController {
 
                 success = true;
                 for (File file : db.getFiles()) {
+                    if (!file.getName().toLowerCase().endsWith(".docx")) {
+                        continue;
+                    }
                     HashMap<String, Integer> hashMap;
                     hashMap = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
                         sb.append(file.getName()).append("\n");
@@ -116,6 +130,9 @@ public class RingCounterController {
                 success = true;
                 HashMap<String, Integer> hashMap = new HashMap<>();
                 for (File file : db.getFiles()) {
+                    if (!file.getName().toLowerCase().endsWith(".docx")) {
+                        continue;
+                    }
                     hashMap = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
                 }
                 for (String key : hashMap.keySet()) {
@@ -131,9 +148,7 @@ public class RingCounterController {
             }
             event.setDropCompleted(success);
 
-
             event.consume();
-
 
         });
 

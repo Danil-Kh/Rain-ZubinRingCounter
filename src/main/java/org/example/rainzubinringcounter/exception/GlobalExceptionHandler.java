@@ -19,8 +19,8 @@ public class GlobalExceptionHandler {
         // Показываем всплывающее окно с информацией об ошибке
         Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Ошибка");
-            alert.setHeaderText("Произошла ошибка в приложении");
+            alert.setTitle("Error");
+            alert.setHeaderText("An error occurred in the application");
             alert.setContentText(e.getMessage());
             alert.showAndWait();
         });
