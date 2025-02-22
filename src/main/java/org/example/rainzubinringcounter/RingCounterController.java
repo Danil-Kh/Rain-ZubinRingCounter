@@ -53,8 +53,11 @@ public class RingCounterController {
             textArea.clear();
             File file = fileChooser.showOpenDialog(fileChooserButton.getScene().getWindow());
 
+                ReaderResult readerResult;
                 HashMap<String, Integer> hashMap;
-                hashMap = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
+                readerResult = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
+                hashMap = readerResult.getHashMap();
+
                 sb.append(file.getName()).append("\n");
                 for (String key : hashMap.keySet()) {
                     sb.append(key).append(": ").append(hashMap.get(key)).append("\n");
@@ -95,9 +98,11 @@ public class RingCounterController {
 
                 success = true;
                 for (File file : db.getFiles()) {
+                    ReaderResult readerResult;
                     HashMap<String, Integer> hashMap;
-                    hashMap = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
-                        sb.append(file.getName()).append("\n");
+                    readerResult = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
+                    hashMap = readerResult.getHashMap();
+                    sb.append(file.getName()).append("\n");
                     for (String key : hashMap.keySet()) {
                         sb.append(key).append(": ").append(hashMap.get(key)).append("\n");
                     }
@@ -114,9 +119,11 @@ public class RingCounterController {
                 }
             }else {
                 success = true;
+                ReaderResult readerResult;
                 HashMap<String, Integer> hashMap = new HashMap<>();
                 for (File file : db.getFiles()) {
-                    hashMap = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
+                    readerResult = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
+                    hashMap = readerResult.getHashMap();
                 }
                 for (String key : hashMap.keySet()) {
                     sb.append(key).append(": ").append(hashMap.get(key)).append("\n");

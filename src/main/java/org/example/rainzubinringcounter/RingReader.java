@@ -7,7 +7,10 @@ import org.springframework.stereotype.Service;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 @Slf4j
@@ -17,9 +20,11 @@ public class RingReader {
     private static final Integer MIN_WORDS_TO_RING = 3;
     private List<Ring> ringList;
     public final HashMap<String, Integer> hashMap = new HashMap<>();
+    public final List<String> errorsList = new ArrayList<>();
 
-    public HashMap<String, Integer> reader (String docxPath, boolean calculateTheSumOfRings){
+    public ReaderResult reader(String docxPath, boolean calculateTheSumOfRings){
         ringList = new ArrayList<>();
+        errorsList.clear();
         if (!calculateTheSumOfRings){
             hashMap.clear();
         }
@@ -49,53 +54,94 @@ public class RingReader {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return new HashMap<>(hashMap);
+        return new ReaderResult(hashMap, errorsList);
     }
 
     private void dealWithRingsInParagraph(XWPFDocument document) {
         for (XWPFParagraph paragraph : document.getParagraphs()) {
-            String word = paragraph.getText();
-            String[] words = word.split("\\s+");
-            if (isValidDouble(words[0]) && words[0] != "") {
-                if (words.length >= MIN_WORDS_TO_RING) {
-                    Ring ring = new Ring(words[0], words[1], words[2]);
-                    ringList.add(ring);
-                }
-            }
-            else  {
-                if (!Objects.equals(words[0], "") && words.length >= MIN_WORDS_TO_RING)
-                {
-                    System.out.println("Invalid time code: " + words[0] + " " + "in the sentence: " + words[0] + " " + words[1] + " " + words[2]);
-                }
-                //throw new RuntimeException("Invalid time code: " + words[0] + " " + "in the sentence: " + words[0] + " " + words[1] + " " + words[2]);
-            }
+            String sentence = paragraph.getText();
+            String[] words = sentence.split("\\s+");
+            validateRing(sentence, words, true);
         }
     }
 
     private void dealWithRingsInTable(XWPFDocument document){
-        String t = "", n = "", p = "";
         for (XWPFTable table : document.getTables()) {
             for (XWPFTableRow row : table.getRows()) {
                 List<XWPFTableCell> cells = row.getTableCells();
-
-                if (cells.size() >= MIN_WORDS_TO_RING) {
+                if (cells.size() == MIN_WORDS_TO_RING) {
                     String time = cells.get(0). getText().trim();
                     String name = cells.get(1). getText().trim();
                     String phrase = cells.get(2). getText().trim();
-                    t= time; n = name; p = phrase;
-                    if (isValidDouble(time)){
-                        Ring ring = new Ring(time, name, phrase);
-                        ringList.add(ring);
-                    }
-                    else  {
-                        System.out.println("Invalid time code: " + t + " " + "in the sentence: " + t + " " + n + " " + p);
-                    }
-                } else {
-                    System.out.println("Invalid structure of the sentence in: " + t + " " + "in the sentence: " + t + " " + n + " " + p);
-                    //throw new RuntimeException("Invalid time code: " + t + " " + "in the sentence: " + t + " " + n + " " + p);
+
+                    String sentence = time + " " + name + " " + phrase;
+                    String[] words = sentence.split("\\s+");
+                    validateRing(sentence, words, false);
+
+//                    if (isValidDouble(time)){
+//                        Ring ring = new Ring(time, name, phrase);
+//                        ringList.add(ring);
+//                    }
+//                    else  {
+//                        System.out.println("Invalid time code: " + t + " " + "in the sentence: " + t + " " + n + " " + p);
+//                    }
+                }
+                else {
+                    writeError("The row must have 3 cells" + row);
                 }
             }
         }
+    }
+
+    private void validateRing(String sentence, String[] words, boolean isForParagraph){
+        if (words.length > 0){
+            if (words.length >= MIN_WORDS_TO_RING){
+                boolean isValidDouble = isValidDouble(words[0]);
+                Pattern pattern = Pattern.compile("^[\\p{Lu}\\-_/.;:,]+$");
+                //Pattern pattern = Pattern.compile("^[\\p{Lu}]+$");
+                Matcher matcher = pattern.matcher(words[1]);
+                boolean hasTheName = matcher.matches();
+
+                if (isValidDouble && hasTheName){
+                    if (isForParagraph){
+                        words[1] = createTheName(sentence);
+                    }
+                    Ring ring = new Ring(words[0], words[1], words[2]);
+                    ringList.add(ring);
+                    log.info("The ring was added : {} in the sentence: {}", words[1], sentence);
+                } else if (!isValidDouble && hasTheName) {
+                    // if the sentence do not have a time code but have a Name
+                    if (words[1].length() > 1){
+                        writeError("The sentence does not have a time code: " + "in the sentence: " + sentence);
+                    }
+                }
+                else if (isValidDouble && !hasTheName){
+                    // if the sentence has a time code but do not have a time code
+                     writeError("The sentence does not have a proper Name: " + words[1] + "in the sentence: " + sentence);
+                }
+            }
+        }
+    }
+
+    private String createTheName(String word1) {
+        String result;
+        String word = word1.replaceFirst("^\\s*\\S+", "").trim();
+        if (word.contains("\t")){
+            word = word.split("\t")[0];
+            result = word.trim();
+        }
+        else {
+            String error = "The sentence does not have a TAB: " +  word1;
+            result = error;
+            log.warn(error);
+            errorsList.add(error);
+        }
+        return result;
+    }
+
+    private void writeError(String error){
+        log.warn(error);
+        errorsList.add(error);
     }
 
     private static boolean isValidDouble(String str) {
