@@ -31,7 +31,7 @@ class RingReaderTest {
     public void Test27(){
         String pathToTheFile = "C:\\Users\\nikit\\IdeaProjects\\Rain-ZubinRingCounter1\\Documents\\NARUTO - S01E27.docx";
         ReaderResult stringIntegerHashtable = ringReader.reader(pathToTheFile, false);
-        if (stringIntegerHashtable.getErrorsList().size() == 3) {
+        if (stringIntegerHashtable.getErrorsList().size() == 1) {
             assert true;
         }
         else {
@@ -42,7 +42,7 @@ class RingReaderTest {
     public void Test12(){
         String pathToTheFile = "C:\\Users\\nikit\\IdeaProjects\\Rain-ZubinRingCounter1\\Documents\\NARUTO - S01E12.docx";
         ReaderResult stringIntegerHashtable = ringReader.reader(pathToTheFile, false);
-        if (stringIntegerHashtable.getErrorsList().size() == 1) {
+        if (stringIntegerHashtable.getErrorsList().size() == 2) {
             assert true;
         }
         else {

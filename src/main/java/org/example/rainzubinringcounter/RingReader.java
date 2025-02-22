@@ -17,10 +17,11 @@ import java.util.regex.Pattern;
 @Service
 public class RingReader {
 
-    private static final Integer MIN_WORDS_TO_RING = 3;
+    private static final Integer MIN_WORDS_TO_RING = 2;
     private List<Ring> ringList;
     public final HashMap<String, Integer> hashMap = new HashMap<>();
     public final List<String> errorsList = new ArrayList<>();
+
 
     public ReaderResult reader(String docxPath, boolean calculateTheSumOfRings){
         ringList = new ArrayList<>();
@@ -58,10 +59,25 @@ public class RingReader {
     }
 
     private void dealWithRingsInParagraph(XWPFDocument document) {
+        boolean skipFirstNames = false;
+        Pattern pattern = Pattern.compile(".*\\p{L}.*");
         for (XWPFParagraph paragraph : document.getParagraphs()) {
             String sentence = paragraph.getText();
             String[] words = sentence.split("\\s+");
-            validateRing(sentence, words, true);
+            if (skipFirstNames) {
+                validateRing(sentence, words, true);
+            }
+            else {
+                if (pattern.matcher(sentence).matches()) {
+                    if (!isValidDouble(words[0]))
+                    {
+                        continue;
+                    }
+                    else {
+                        skipFirstNames = true;
+                    }
+                }
+            }
         }
     }
 
@@ -69,22 +85,18 @@ public class RingReader {
         for (XWPFTable table : document.getTables()) {
             for (XWPFTableRow row : table.getRows()) {
                 List<XWPFTableCell> cells = row.getTableCells();
-                if (cells.size() == MIN_WORDS_TO_RING) {
+                if (cells.size() == 3) {
                     String time = cells.get(0). getText().trim();
                     String name = cells.get(1). getText().trim();
                     String phrase = cells.get(2). getText().trim();
 
                     String sentence = time + " " + name + " " + phrase;
                     String[] words = sentence.split("\\s+");
+                    if (time.isEmpty() || name.isEmpty() || phrase.isEmpty()) {
+                        errorsList.add("The cell is empty in the sentence: " + sentence);
+                        continue;
+                    }
                     validateRing(sentence, words, false);
-
-//                    if (isValidDouble(time)){
-//                        Ring ring = new Ring(time, name, phrase);
-//                        ringList.add(ring);
-//                    }
-//                    else  {
-//                        System.out.println("Invalid time code: " + t + " " + "in the sentence: " + t + " " + n + " " + p);
-//                    }
                 }
                 else {
                     writeError("The row must have 3 cells" + row);
@@ -94,6 +106,7 @@ public class RingReader {
     }
 
     private void validateRing(String sentence, String[] words, boolean isForParagraph){
+
         if (words.length > 0){
             if (words.length >= MIN_WORDS_TO_RING){
                 boolean isValidDouble = isValidDouble(words[0]);
