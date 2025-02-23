@@ -74,6 +74,7 @@ public class RingReader {
                         continue;
                     }
                     else {
+                        validateRing(sentence, words, true);
                         skipFirstNames = true;
                     }
                 }
@@ -106,22 +107,23 @@ public class RingReader {
     }
 
     private void validateRing(String sentence, String[] words, boolean isForParagraph){
-
         if (words.length > 0){
             if (words.length >= MIN_WORDS_TO_RING){
                 boolean isValidDouble = isValidDouble(words[0]);
                 Pattern pattern = Pattern.compile("^[\\p{Lu}\\-_/.;:,]+$");
-                //Pattern pattern = Pattern.compile("^[\\p{Lu}]+$");
                 Matcher matcher = pattern.matcher(words[1]);
                 boolean hasTheName = matcher.matches();
 
                 if (isValidDouble && hasTheName){
+                    int errorsListCount = errorsList.size();
                     if (isForParagraph){
                         words[1] = createTheName(sentence);
                     }
-                    Ring ring = new Ring(words[0], words[1], words[2]);
-                    ringList.add(ring);
-                    log.info("The ring was added : {} in the sentence: {}", words[1], sentence);
+                    if (errorsList.size() - 1 != errorsListCount){
+                        Ring ring = new Ring(words[0], words[1], words[2]);
+                        ringList.add(ring);
+                        log.info("The ring was added : {} in the sentence: {}", words[1], sentence);
+                    }
                 } else if (!isValidDouble && hasTheName) {
                     // if the sentence do not have a time code but have a Name
                     if (words[1].length() > 1){
