@@ -14,13 +14,12 @@ import org.springframework.stereotype.Component;
 public class GlobalExceptionHandler {
 
     public void handleException(Throwable e) {
-        log.error("Произошла ошибка: ", e);
 
-        // Показываем всплывающее окно с информацией об ошибке
+
         Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Ошибка");
-            alert.setHeaderText("Произошла ошибка в приложении");
+            alert.setTitle("Error");
+            alert.setHeaderText("An error occurred in the application");
             alert.setContentText(e.getMessage());
             alert.showAndWait();
         });

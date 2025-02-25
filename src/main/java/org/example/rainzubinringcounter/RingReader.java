@@ -132,7 +132,7 @@ public class RingReader {
                 }
                 else if (isValidDouble && !hasTheName){
                     // if the sentence has a time code but do not have a time code
-                     writeError("The sentence does not have a proper Name: " + words[1] + "in the sentence: " + sentence);
+                     writeError("The sentence does not have a proper Name: " + words[1] + " in the sentence: " + sentence);
                 }
             }
         }
