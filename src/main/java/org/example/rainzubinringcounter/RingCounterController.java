@@ -51,10 +51,10 @@ public class RingCounterController {
                        new IncorrectFileFormatException(ExceptionMessage.INCORRECT_FILE_FORMAT.getMessage()));
                return;
             }
+            ReaderResult readerResult = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
+            printRingToTextArea(sb, file, readerResult);
 
-            printRingToTextArea(sb, file);
-
-            displayErrors(file);
+            displayErrors(file, readerResult);
 
             try {
                     createDocument(sb, file.getName());
@@ -88,7 +88,7 @@ public class RingCounterController {
                 for (File file : db.getFiles()) {
                    if (isValidFile(file)) {continue;}
                    ReaderResult readerResult = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
-                    printRingToTextArea(sb, file);
+                    printRingToTextArea(sb, file, readerResult);
                     displayErrors(file, db, readerResult);
                 }
                 try {
@@ -132,9 +132,9 @@ public class RingCounterController {
 
 }
 
-    private void printRingToTextArea(StringBuilder sb, File file) {
+    private void printRingToTextArea(StringBuilder sb, File file, ReaderResult readerResult) {
         HashMap<String, Integer> hashMap;
-        hashMap = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected()).getHashMap();
+        hashMap = readerResult.getHashMap();
         sb.append("---").append(file.getName()).append("---").append("\n");
         for (String key : hashMap.keySet()) {
             sb.append(key).append(": ").append(hashMap.get(key)).append("\n");
@@ -159,10 +159,10 @@ public class RingCounterController {
         }
         rederResult(file, sb, readerResult);
     }
-    private void displayErrors(File file) {
+    private void displayErrors(File file, ReaderResult readerResult) {
         textAreaError.clear();
         StringBuilder sb = new StringBuilder();
-        rederResult(file, sb);
+        rederResult(file, sb, readerResult);
     }
 
     private void rederResult(File file, StringBuilder sb, ReaderResult readerResult) {
