@@ -20,7 +20,7 @@ public class RingCounter extends Application {
     @Override
     public void init() {
         applicationContext = new SpringApplicationBuilder(RainZubinRingCounterApplication.class).run();
-        globalExceptionHandler = applicationContext.getBean(GlobalExceptionHandler.class); // Инжект вручную
+        globalExceptionHandler = applicationContext.getBean(GlobalExceptionHandler.class);
 
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
             globalExceptionHandler.handleException(throwable);

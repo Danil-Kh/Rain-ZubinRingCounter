@@ -2,15 +2,10 @@ package org.example.rainzubinringcounter;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
-import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
-import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
@@ -41,11 +36,8 @@ public class RingCounterController {
     public Circle circleDrag;
     @FXML
     public Button fileChooserButton;
-
     private final FileChooser fileChooser = new FileChooser();
-
     RingReader ringReader = new RingReader();
-
 
     @FXML
     private void initialize() {
@@ -95,8 +87,9 @@ public class RingCounterController {
             if (db.hasFiles() && !sumFile.isSelected()) {
                 for (File file : db.getFiles()) {
                    if (isValidFile(file)) {continue;}
+                   ReaderResult readerResult = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
                     printRingToTextArea(sb, file);
-                    displayErrors(file, db);
+                    displayErrors(file, db, readerResult);
                 }
                 try {
                     createDocument(sb, db.getFiles().getFirst().getName());
@@ -112,7 +105,8 @@ public class RingCounterController {
 
                     ReaderResult readerResult = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
                     hashMap = readerResult.getHashMap();
-                    displayErrors(file, db);
+
+                    displayErrors(file, db, readerResult);
                 }
 
                 for (String key : hashMap.keySet()) {
@@ -158,12 +152,12 @@ public class RingCounterController {
         }
     }
 
-    private void displayErrors(File file, Dragboard db) {
+    private void displayErrors(File file, Dragboard db, ReaderResult readerResult) {
         StringBuilder sb = new StringBuilder();
         if (db.getFiles().getFirst().equals(file)) {
             textAreaError.clear();
         }
-        rederResult(file, sb);
+        rederResult(file, sb, readerResult);
     }
     private void displayErrors(File file) {
         textAreaError.clear();
@@ -171,6 +165,13 @@ public class RingCounterController {
         rederResult(file, sb);
     }
 
+    private void rederResult(File file, StringBuilder sb, ReaderResult readerResult) {
+        for (String error : readerResult.getErrorsList()) {
+            sb.append("\n").append(file.getName()).append(": ").append(error).append("\n");
+        }
+        textAreaError.appendText(sb.toString());
+        sb.setLength(0);
+    }
     private void rederResult(File file, StringBuilder sb) {
         ReaderResult readerResult = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
         for (String error : readerResult.getErrorsList()) {
