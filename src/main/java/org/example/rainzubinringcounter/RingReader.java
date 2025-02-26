@@ -35,10 +35,10 @@ public class RingReader {
         try (FileInputStream fis = new FileInputStream(docxPath);
             XWPFDocument document = new XWPFDocument(fis)) {
             if (document.getTables().isEmpty()) {
-                log.info("==============Deal with paragraphs==============");
+//                log.info("==============Deal with paragraphs==============");
                 dealWithRingsInParagraph(document);
             } else {
-                log.info("==============Deal with tables==============");
+//                log.info("==============Deal with tables==============");
                 dealWithRingsInTable(document);
             }
 
@@ -49,10 +49,10 @@ public class RingReader {
                     hashMap.put(ring.getName(), 1);
                 }
             }
-            System.out.println("=== Ring Name Frequency ===");
-            for (Map.Entry<String, Integer> entry : hashMap.entrySet()) {
-                System.out.println(entry.getKey() + ": " + entry.getValue());
-            }
+//            System.out.println("=== Ring Name Frequency ===");
+//            for (Map.Entry<String, Integer> entry : hashMap.entrySet()) {
+//                System.out.println(entry.getKey() + ": " + entry.getValue());
+//            }
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -137,7 +137,7 @@ public class RingReader {
                     if (errorsList.size() - 1 != errorsListCount){
                         Ring ring = new Ring(words[0], words[1], words[2]);
                         ringList.add(ring);
-                        log.info("The ring was added : {} in the sentence: {}", words[1], sentence);
+                       // log.info("The ring was added : {} in the sentence: {}", words[1], sentence);
                     }
                 } else if (!isValidDouble && hasTheName) {
                     // if the sentence do not have a time code but have a Name

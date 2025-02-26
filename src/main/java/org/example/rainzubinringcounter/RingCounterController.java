@@ -172,14 +172,6 @@ public class RingCounterController {
         textAreaError.appendText(sb.toString());
         sb.setLength(0);
     }
-    private void rederResult(File file, StringBuilder sb) {
-        ReaderResult readerResult = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
-        for (String error : readerResult.getErrorsList()) {
-            sb.append("\n").append(file.getName()).append(": ").append(error).append("\n");
-        }
-        textAreaError.appendText(sb.toString());
-        sb.setLength(0);
-    }
 
     private void createDocument(StringBuilder sb, String fileName) throws IncorrectFileFormatException {
         try {
