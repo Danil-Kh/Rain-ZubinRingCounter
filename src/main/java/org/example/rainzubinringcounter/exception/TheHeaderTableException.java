@@ -1,7 +1,7 @@
 package org.example.rainzubinringcounter.exception;
 
-public class TheHeaderTableExeption extends RuntimeException {
-    public TheHeaderTableExeption(ExceptionMessage message) {
+public class TheHeaderTableException extends Exception {
+    public TheHeaderTableException(String message) {
         super(message);
     }
 }

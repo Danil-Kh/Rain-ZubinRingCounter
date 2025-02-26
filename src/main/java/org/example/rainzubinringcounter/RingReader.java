@@ -3,11 +3,13 @@ package org.example.rainzubinringcounter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xwpf.usermodel.*;
 
+import org.example.rainzubinringcounter.exception.ExceptionMessage;
+import org.example.rainzubinringcounter.exception.GlobalExceptionHandler;
+import org.example.rainzubinringcounter.exception.TheHeaderTableException;
 import org.springframework.stereotype.Service;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,7 +23,7 @@ public class RingReader {
     private List<Ring> ringList;
     public final HashMap<String, Integer> hashMap = new HashMap<>();
     public final List<String> errorsList = new ArrayList<>();
-
+    private GlobalExceptionHandler globalExceptionHandler = new GlobalExceptionHandler();
 
     public ReaderResult reader(String docxPath, boolean calculateTheSumOfRings){
         ringList = new ArrayList<>();
@@ -82,7 +84,10 @@ public class RingReader {
         }
     }
 
+
+
     private void dealWithRingsInTable(XWPFDocument document){
+        boolean checkTheHeader = false;
         for (XWPFTable table : document.getTables()) {
             for (XWPFTableRow row : table.getRows()) {
                 List<XWPFTableCell> cells = row.getTableCells();
@@ -90,6 +95,16 @@ public class RingReader {
                     String time = cells.get(0). getText().trim();
                     String name = cells.get(1). getText().trim();
                     String phrase = cells.get(2). getText().trim();
+                    if (!checkTheHeader) {
+                        if (time.equals("ТАЙМ-КОД") && name.equals("ПЕРСОНАЖ") && phrase.equals("ТЕКСТ")){
+                            checkTheHeader = true;
+                            continue;
+                        }
+                    }
+                    if (!checkTheHeader) {
+                        globalExceptionHandler.handleException(new TheHeaderTableException(ExceptionMessage.INCORRECT_TABLE_HANDLER.getMessage()));
+                        return;
+                    }
 
                     String sentence = time + " " + name + " " + phrase;
                     String[] words = sentence.split("\\s+");
@@ -132,7 +147,7 @@ public class RingReader {
                 }
                 else if (isValidDouble && !hasTheName){
                     // if the sentence has a time code but do not have a time code
-                     writeError("The sentence does not have a proper Name: " + words[1] + " in the sentence: " + sentence);
+                     writeError("The sentence does not have a proper Name: " + words[1] + "in the sentence: " + sentence);
                 }
             }
         }
@@ -148,14 +163,12 @@ public class RingReader {
         else {
             String error = "The sentence does not have a TAB: " +  word1;
             result = error;
-            log.warn(error);
             errorsList.add(error);
         }
         return result;
     }
 
     private void writeError(String error){
-        log.warn(error);
         errorsList.add(error);
     }
 
