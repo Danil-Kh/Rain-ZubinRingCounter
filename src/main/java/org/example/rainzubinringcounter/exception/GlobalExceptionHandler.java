@@ -14,9 +14,8 @@ import org.springframework.stereotype.Component;
 public class GlobalExceptionHandler {
 
     public void handleException(Throwable e) {
-        log.error("Произошла ошибка: ", e);
 
-        // Показываем всплывающее окно с информацией об ошибке
+
         Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Error");

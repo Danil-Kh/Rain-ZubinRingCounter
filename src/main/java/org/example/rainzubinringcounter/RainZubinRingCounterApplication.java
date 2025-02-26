@@ -1,9 +1,8 @@
 package org.example.rainzubinringcounter;
 
 import javafx.application.Application;
-import org.springframework.boot.SpringApplication;
+import org.example.rainzubinringcounter.configuration.RingCounter;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ApplicationContext;
 
 @SpringBootApplication
 public class RainZubinRingCounterApplication {
