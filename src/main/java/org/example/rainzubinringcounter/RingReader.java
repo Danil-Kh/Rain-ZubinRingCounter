@@ -125,7 +125,8 @@ public class RingReader {
         if (words.length > 0){
             if (words.length >= MIN_WORDS_TO_RING){
                 boolean isValidDouble = isValidDouble(words[0]);
-                Pattern pattern = Pattern.compile("^[\\p{Lu}\\-_/.;:,]+$");
+                //Pattern pattern = Pattern.compile("^[\\p{Lu}\\-_/.;:,]+$");
+                Pattern pattern = Pattern.compile("^[\\p{Lu}\\p{N}\\-_/.;:,]+$");
                 Matcher matcher = pattern.matcher(words[1]);
                 boolean hasTheName = matcher.matches();
 
