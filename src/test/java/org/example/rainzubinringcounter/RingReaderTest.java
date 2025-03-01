@@ -17,7 +17,7 @@ class RingReaderTest {
 
     @Test
     public void less_than_eight_error_parsing_episod_28(){
-        String pathToTheFile = "Documents\\NARUTO - S01E28.docx";
+        String pathToTheFile = "Documents/NARUTO - S01E28.docx";
 
         ReaderResult stringIntegerHashtable = ringReader.reader(pathToTheFile, false);
         HashMap<String, Integer> hashMap = stringIntegerHashtable.getHashMap();
@@ -27,14 +27,14 @@ class RingReaderTest {
 
     @Test
     public void one_error_parsing_episod_27(){
-        String pathToTheFile = "Documents\\NARUTO - S01E27.docx";
+        String pathToTheFile = "Documents/NARUTO - S01E27.docx";
         ReaderResult stringIntegerHashtable = ringReader.reader(pathToTheFile, false);
         assertEquals(1, stringIntegerHashtable.getErrorsList().size());
     }
 
     @Test
     public void one_error_parsing_episod_12(){
-        String pathToTheFile = "Documents\\NARUTO - S01E12.docx";
+        String pathToTheFile = "Documents/NARUTO - S01E12.docx";
         ReaderResult stringIntegerHashtable = ringReader.reader(pathToTheFile, false);
         assertEquals(1, stringIntegerHashtable.getErrorsList().size());
     }
