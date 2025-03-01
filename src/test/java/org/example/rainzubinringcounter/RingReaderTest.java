@@ -8,45 +8,34 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.util.HashMap;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 @Slf4j
-@SpringBootTest
 class RingReaderTest {
-    @Resource
-    RingReader ringReader;
+    RingReader ringReader = new RingReader();
 
     @Test
-    public void Test28(){
-        String pathToTheFile = "C:\\Users\\nikit\\IdeaProjects\\Rain-ZubinRingCounter1\\Documents\\NARUTO - S01E28.docx";
+    public void less_than_eight_error_parsing_episod_28(){
+        String pathToTheFile = "Documents/NARUTO - S01E28.docx";
 
         ReaderResult stringIntegerHashtable = ringReader.reader(pathToTheFile, false);
         HashMap<String, Integer> hashMap = stringIntegerHashtable.getHashMap();
-        if (hashMap.get("НІНДЖЯ ТРАВИ") == 1 && stringIntegerHashtable.getErrorsList().size() < 8) {
-           assert true;
-        }
-        else {
-            assert false;
-        }
+        assertEquals(1, hashMap.get("НІНДЖЯ ТРАВИ"));
+        assertTrue(stringIntegerHashtable.getErrorsList().size() < 8);
     }
+
     @Test
-    public void Test27(){
-        String pathToTheFile = "C:\\Users\\nikit\\IdeaProjects\\Rain-ZubinRingCounter1\\Documents\\NARUTO - S01E27.docx";
+    public void one_error_parsing_episod_27(){
+        String pathToTheFile = "Documents/NARUTO - S01E27.docx";
         ReaderResult stringIntegerHashtable = ringReader.reader(pathToTheFile, false);
-        if (stringIntegerHashtable.getErrorsList().size() == 1) {
-            assert true;
-        }
-        else {
-            assert false;
-        }
+        assertEquals(1, stringIntegerHashtable.getErrorsList().size());
     }
+
     @Test
-    public void Test12(){
-        String pathToTheFile = "C:\\Users\\nikit\\IdeaProjects\\Rain-ZubinRingCounter1\\Documents\\NARUTO - S01E12.docx";
+    public void one_error_parsing_episod_12(){
+        String pathToTheFile = "Documents/NARUTO - S01E12.docx";
         ReaderResult stringIntegerHashtable = ringReader.reader(pathToTheFile, false);
-        if (stringIntegerHashtable.getErrorsList().size() == 1) {
-            assert true;
-        }
-        else {
-            assert false;
-        }
+        assertEquals(1, stringIntegerHashtable.getErrorsList().size());
     }
 }
