@@ -23,7 +23,7 @@ public class RingReader {
     private List<Ring> ringList;
     public final HashMap<String, Integer> hashMap = new HashMap<>();
     public final List<String> errorsList = new ArrayList<>();
-    private GlobalExceptionHandler globalExceptionHandler = new GlobalExceptionHandler();
+    private final GlobalExceptionHandler globalExceptionHandler = new GlobalExceptionHandler();
 
     public ReaderResult reader(String docxPath, boolean calculateTheSumOfRings){
         ringList = new ArrayList<>();
@@ -49,10 +49,6 @@ public class RingReader {
                     hashMap.put(ring.getName(), 1);
                 }
             }
-//            System.out.println("=== Ring Name Frequency ===");
-//            for (Map.Entry<String, Integer> entry : hashMap.entrySet()) {
-//                System.out.println(entry.getKey() + ": " + entry.getValue());
-//            }
 
         } catch (IOException e) {
             e.printStackTrace();
