@@ -21,48 +21,63 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Controller
 public class RingCounterController {
     private final GlobalExceptionHandler globalExceptionHandler = new GlobalExceptionHandler();
+    private boolean isUpdatingSelection = false;
+    private final FileChooser fileChooser = new FileChooser();
+    private final RingReader ringReader = new RingReader();
 
     @FXML
     public CheckBox sumFile;
     @FXML
     public TextArea textAreaError;
     @FXML
+    public CheckBox splitFile;
+    @FXML
     private TextArea textArea;
     @FXML
     public Circle circleDrag;
     @FXML
     public Button fileChooserButton;
-    private final FileChooser fileChooser = new FileChooser();
-    RingReader ringReader = new RingReader();
 
     @FXML
     private void initialize() {
+        sumFile.selectedProperty().addListener((obs, wasSelected, isNowSelected) -> {
+            if (isUpdatingSelection) return;
+
+            if (isNowSelected) {
+                isUpdatingSelection = true;
+                splitFile.setSelected(false);
+                ringReader.hashMap.clear();
+                isUpdatingSelection = false;
+            }
+        });
+
+        splitFile.selectedProperty().addListener((obs, wasSelected, isNowSelected) -> {
+            if (isUpdatingSelection) return;
+
+            if (isNowSelected) {
+                isUpdatingSelection = true;
+                sumFile.setSelected(false);
+                isUpdatingSelection = false;
+            }
+        });
+
         fileChooserButton.setOnAction(event -> {
             StringBuilder sb = new StringBuilder();
             textArea.clear();
             File file = fileChooser.showOpenDialog(fileChooserButton.getScene().getWindow());
-
             if (isValidFile(file)) {
                globalExceptionHandler.handleException(
                        new IncorrectFileFormatException(ExceptionMessage.INCORRECT_FILE_FORMAT.getMessage()));
                return;
             }
-            ReaderResult readerResult = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
-            printRingToTextArea(sb, file, readerResult);
-
-            displayErrors(file, readerResult);
-
-            try {
-                    createDocument(sb, file.getName());
-                } catch (IncorrectFileFormatException e) {
-                    globalExceptionHandler.handleException(e);
-                }
-                sb.setLength(0);
-
+            PrintAllInformationAboutTheFileInTextField(file, sb);
+            safeCreateDocument(sb, file.getName());
         });
         circleDrag.setOnDragDetected(event -> {
             System.out.println("\"file detected \" = " + "file detected ");
@@ -80,64 +95,106 @@ public class RingCounterController {
             event.consume();
         });
         circleDrag.setOnDragDropped(event -> {
-            Dragboard db = event.getDragboard();
+            Dragboard eventDragboard = event.getDragboard();
             textArea.clear();
-            StringBuilder sb = new StringBuilder();
+            if (eventDragboard.hasFiles()) {
+                List<File> files = eventDragboard.getFiles();
 
-            if (db.hasFiles() && !sumFile.isSelected()) {
-                for (File file : db.getFiles()) {
-                   if (isValidFile(file)) {continue;}
-                   ReaderResult readerResult = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
-                    printRingToTextArea(sb, file, readerResult);
-                    displayErrors(file, db, readerResult);
-                }
-                try {
-                    createDocument(sb, db.getFiles().getFirst().getName());
-                } catch (IncorrectFileFormatException e) {
-                    globalExceptionHandler.handleException(e);
-                }
-                sb.setLength(0);
-            }else {
-                HashMap<String, Integer> hashMap = new HashMap<>();
-                    sb.append("---").append(db.getFiles().getFirst().getName()).append("---").append("\n");
-                for (File file : db.getFiles()) {
-                    if (isValidFile(file)) continue;
-
-                    ReaderResult readerResult = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
-                    hashMap = readerResult.getHashMap();
-
-                    displayErrors(file, db, readerResult);
-                }
-
-                for (String key : hashMap.keySet()) {
-                    sb.append(key).append(": ").append(hashMap.get(key)).append("\n");
-                }
-                textArea.appendText(sb.toString());
-                try {
-                    createDocument(sb, db.getFiles().getFirst().getName());
-                } catch (IncorrectFileFormatException e) {
-                    globalExceptionHandler.handleException(e);
+                if (sumFile.isSelected()) {
+                    handleSumFiles(files, eventDragboard);
+                } else if (splitFile.isSelected()) {
+                    handleSplitFiles(files, eventDragboard);
+                } else {
+                    handleDefault(files, eventDragboard);
                 }
             }
             event.consume();
         });
 
         sumFile.setOnAction(event -> {
-
             if (sumFile.isSelected()) {
                 ringReader.hashMap.clear();
             }
-
         });
-
 }
 
+    private void handleDefault(List<File> files, Dragboard eventDragboard) {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (File file : files) {
+            PrintAllInformationAboutTheFileInTextField(file, stringBuilder, eventDragboard);
+        }
+
+        if (!stringBuilder.isEmpty()) {
+            safeCreateDocument(stringBuilder, files.getFirst().getName());
+        }
+    }
+
+    private void handleSplitFiles(List<File> files, Dragboard eventDragboard) {
+        for (File file : files) {
+            StringBuilder stringBuilder = new StringBuilder();
+            PrintAllInformationAboutTheFileInTextField(file, stringBuilder, eventDragboard);
+
+            if (!stringBuilder.isEmpty()) {
+                safeCreateDocument(stringBuilder, file.getName());
+            }
+        }
+    }
+
+    private void handleSumFiles(List<File> files, Dragboard eventDragboard) {
+        StringBuilder stringBuilder = new StringBuilder();
+        ReaderResult readerResultForSum = null;
+
+        for (File file : files) {
+            if (isValidFile(file)) continue;
+            readerResultForSum = ringReader.reader(file.getAbsolutePath(), true);
+            displayErrors(file, eventDragboard, readerResultForSum);
+        }
+
+        if (readerResultForSum != null) {
+            printRingToTextArea(stringBuilder, files.getFirst(), readerResultForSum);
+            safeCreateDocument(stringBuilder, files.getFirst().getName());
+        }
+    }
+
+    private void safeCreateDocument(StringBuilder content, String fileName) {
+        try {
+            createDocument(content, fileName);
+        } catch (IncorrectFileFormatException e) {
+            globalExceptionHandler.handleException(e);
+        }
+    }
+
+    private void PrintAllInformationAboutTheFileInTextField(File file
+            , StringBuilder stringBuilder, Dragboard eventDragboard) {
+        if (isValidFile(file)) {
+            return;
+        }
+        ReaderResult readerResult = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
+        printRingToTextArea(stringBuilder, file, readerResult);
+        displayErrors(file, eventDragboard, readerResult);
+    }
+
+    private void PrintAllInformationAboutTheFileInTextField(File file
+            , StringBuilder stringBuilder) {
+        if (isValidFile(file)) {
+            return;
+        }
+        ReaderResult readerResult = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
+        printRingToTextArea(stringBuilder, file, readerResult);
+        displayErrors(file, readerResult);
+    }
+
+
     private void printRingToTextArea(StringBuilder sb, File file, ReaderResult readerResult) {
-        HashMap<String, Integer> hashMap;
-        hashMap = readerResult.getHashMap();
+        HashMap<String, Integer> resultToPrintRing;
+        Map<String, List<String>> resultToPrintNameToTime;
+        resultToPrintRing = readerResult.getHashMap();
+        resultToPrintNameToTime = readerResult.getNameToTimes();
+
         sb.append("---").append(file.getName()).append("---").append("\n");
-        for (String key : hashMap.keySet()) {
-            sb.append(key).append(": ").append(hashMap.get(key)).append("\n");
+        for (String key : resultToPrintRing.keySet()) {
+            sb.append(key).append(": ").append(resultToPrintRing.get(key)).append("\n");
+            sb.append(key).append(": ").append(resultToPrintNameToTime.get(key)).append("\n");
         }
         textArea.clear();
         textArea.appendText(sb.toString());
@@ -159,6 +216,7 @@ public class RingCounterController {
         }
         rederResult(file, sb, readerResult);
     }
+
     private void displayErrors(File file, ReaderResult readerResult) {
         textAreaError.clear();
         StringBuilder sb = new StringBuilder();
@@ -189,7 +247,6 @@ public class RingCounterController {
 
             XWPFDocument xwpfDocument = new XWPFDocument();
 
-
             String[] lines = sb.toString().split("\n");
             for (String line : lines) {
                 XWPFParagraph paragraph = xwpfDocument.createParagraph();
@@ -205,5 +262,4 @@ public class RingCounterController {
             throw new IncorrectFileFormatException(ExceptionMessage.INCORRECT_FILE_FORMAT.toString());
         }
     }
-
 }
