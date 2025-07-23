@@ -84,7 +84,7 @@ public class RingCounterController {
                return;
             }
             PrintAllInformationAboutTheFileInTextField(file, sb);
-            safeCreateDocument(sb, file.getName());
+            safeCreateDocument(sb, file.getName(), file.getAbsolutePath());
         });
         circleDrag.setOnDragDetected(event -> {
             System.out.println("\"file detected \" = " + "file detected ");
@@ -132,7 +132,7 @@ public class RingCounterController {
         }
 
         if (!stringBuilder.isEmpty()) {
-            safeCreateDocument(stringBuilder, files.getFirst().getName());
+            safeCreateDocument(stringBuilder, files.getFirst().getName(), files.getFirst().getAbsolutePath());
         }
     }
 
@@ -142,7 +142,7 @@ public class RingCounterController {
             PrintAllInformationAboutTheFileInTextField(file, stringBuilder, eventDragboard);
 
             if (!stringBuilder.isEmpty()) {
-                safeCreateDocument(stringBuilder, file.getName());
+                safeCreateDocument(stringBuilder, file.getName(), file.getAbsolutePath());
             }
         }
     }
@@ -159,13 +159,13 @@ public class RingCounterController {
 
         if (readerResultForSum != null) {
             printRingToTextArea(stringBuilder, files.getFirst(), readerResultForSum);
-            safeCreateDocument(stringBuilder, files.getFirst().getName());
+            safeCreateDocument(stringBuilder, files.getFirst().getName(), files.getFirst().getAbsolutePath());
         }
     }
 
-    private void safeCreateDocument(StringBuilder content, String fileName) {
+    private void safeCreateDocument(StringBuilder content, String fileName, String absolutePath) {
         try {
-            createDocument(content, fileName);
+            createDocument(content, fileName, absolutePath);
         } catch (IncorrectFileFormatException e) {
             globalExceptionHandler.handleException(e);
         }
