@@ -7,13 +7,18 @@ import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.shape.Circle;
 import javafx.stage.FileChooser;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.apache.poi.xwpf.usermodel.XWPFParagraph;
-import org.apache.poi.xwpf.usermodel.XWPFRun;
+import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
+import org.apache.poi.xwpf.usermodel.*;
 import org.example.rainzubinringcounter.exception.ExceptionMessage;
 import org.example.rainzubinringcounter.exception.GlobalExceptionHandler;
 import org.example.rainzubinringcounter.exception.IncorrectFileFormatException;
+import org.openxmlformats.schemas.officeDocument.x2006.sharedTypes.STVerticalAlignRun;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTP;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPPr;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTRPr;
 import org.springframework.stereotype.Controller;
+
+import java.io.File;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -23,6 +28,8 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Controller
 public class RingCounterController {
@@ -216,7 +223,6 @@ public class RingCounterController {
         }
         rederResult(file, sb, readerResult);
     }
-
     private void displayErrors(File file, ReaderResult readerResult) {
         textAreaError.clear();
         StringBuilder sb = new StringBuilder();
@@ -231,7 +237,7 @@ public class RingCounterController {
         sb.setLength(0);
     }
 
-    private void createDocument(StringBuilder sb, String fileName) throws IncorrectFileFormatException {
+    private void createDocument(StringBuilder sb, String fileName, String absolutePath) throws IncorrectFileFormatException {
         try {
             String userHome = System.getProperty("user.home");
             String dirPath = Paths.get(userHome, "Documents", "GeneratedDocs").toString();
@@ -242,21 +248,99 @@ public class RingCounterController {
                 throw new IOException("Failed to create directory: " + dirPath);
             }
 
-            String filename = Paths.get(dirPath, "ring_" + fileName + ".docx").toString();
-            FileOutputStream fileOutputStream = new FileOutputStream(filename);
+            File originalFile = new File(absolutePath);
+            String newFilePath = Paths.get(dirPath, "ring_" + fileName).toString();
 
+            FileInputStream fileInputStream = new FileInputStream(originalFile);
+            XWPFDocument originalDoc = new XWPFDocument(fileInputStream);
             XWPFDocument xwpfDocument = new XWPFDocument();
+
+            XWPFParagraph samplePar = originalDoc.getParagraphs().isEmpty() ? null : originalDoc.getParagraphs().get(0);
+            CTPPr samplePPr = (samplePar != null && samplePar.getCTP().getPPr() != null)
+                    ? (CTPPr) samplePar.getCTP().getPPr().copy() : null;
+
+            String fontFamily = "Calibri";
+            int fontSize = 11;
+            STVerticalAlignRun.Enum verticalAlignment = null;
+            if (!originalDoc.getParagraphs().isEmpty()) {
+                XWPFParagraph firstParagraph = originalDoc.getParagraphs().get(0);
+                if (!firstParagraph.getRuns().isEmpty()) {
+                    XWPFRun firstRun = firstParagraph.getRuns().get(0);
+                    if (firstRun.getFontFamily() != null) fontFamily = firstRun.getFontFamily();
+                    if (firstRun.getFontSize() > 0) fontSize = firstRun.getFontSize();
+                    if (firstRun.getVerticalAlignment() != null) verticalAlignment = firstRun.getVerticalAlignment();
+                }
+            }
 
             String[] lines = sb.toString().split("\n");
             for (String line : lines) {
                 XWPFParagraph paragraph = xwpfDocument.createParagraph();
+                if (samplePPr != null) {
+                    paragraph.getCTP().setPPr((CTPPr) samplePPr.copy());
+                }
+
                 XWPFRun run = paragraph.createRun();
                 run.setText(line);
+                run.setFontFamily(fontFamily);
+                run.setFontSize(fontSize);
+                if (verticalAlignment != null) run.setVerticalAlignment(verticalAlignment.toString());
             }
 
-            xwpfDocument.write(fileOutputStream);
-            fileOutputStream.close();
+            for (IBodyElement elem : originalDoc.getBodyElements()) {
+                if (elem instanceof XWPFParagraph) {
+                    XWPFParagraph origPar =  (XWPFParagraph) elem;
+                    XWPFParagraph newPar = xwpfDocument.createParagraph();
 
+                    if (origPar.getCTP().getPPr() != null)
+                        newPar.getCTP().setPPr((CTPPr) origPar.getCTP().getPPr().copy());
+
+
+                    int indentationLeft = origPar.getIndentationLeft() != -1 ? origPar.getIndentationLeft() : (int) Math.round(2.17 * 1440);
+                    int indentationRight = origPar.getIndentationRight() != -1 ? origPar.getIndentationRight() : 0;
+                    int indentationHanging = origPar.getIndentationHanging() != -1 ? origPar.getIndentationHanging() : (int) Math.round(2.17 * 1440);
+                    int spacingBefore = origPar.getSpacingBefore() != -1 ? origPar.getSpacingBefore() : 0;
+                    int spacingAfter = origPar.getSpacingAfter() != -1 ? origPar.getSpacingAfter() : 0;
+                    double spacingBetween = origPar.getSpacingBetween() != -1 ? origPar.getSpacingBetween() : 1.15;
+
+                    ParagraphAlignment alignment = origPar.getAlignment() != null ? origPar.getAlignment() : ParagraphAlignment.LEFT;
+
+                    newPar.setAlignment(alignment);
+                    newPar.setIndentationLeft(indentationLeft);
+                    newPar.setIndentationRight(indentationRight);
+                    newPar.setIndentationHanging(indentationHanging);
+                    newPar.setSpacingBefore(spacingBefore);
+                    newPar.setSpacingAfter(spacingAfter);
+                    newPar.setSpacingBetween(spacingBetween);
+
+                    for (XWPFRun origRun : origPar.getRuns()) {
+                        XWPFRun newRun = newPar.createRun();
+                        if (origRun.getCTR().getRPr() != null)
+                            newRun.getCTR().setRPr((CTRPr) origRun.getCTR().getRPr().copy());
+                        newRun.setText(origRun.text());
+                    }
+
+                } else if (elem instanceof XWPFTable) {
+                    XWPFTable origTable = (XWPFTable) elem;
+                    XWPFTable newTable = xwpfDocument.createTable();
+                    try {
+                        newTable.getCTTbl().set(origTable.getCTTbl().copy());
+                    } catch (Exception ex) {
+                        for (XWPFTableRow row : origTable.getRows()) {
+                            XWPFTableRow newRow = newTable.createRow();
+                            for (int i = 0; i < row.getTableCells().size(); i++) {
+                                XWPFTableCell origCell = row.getCell(i);
+                                XWPFTableCell newCell = newRow.addNewTableCell();
+                                newCell.setText(origCell.getText());
+                            }
+                        }
+                    }
+                }
+            }
+            FileOutputStream fileOutputStream = new FileOutputStream(newFilePath);
+            xwpfDocument.write(fileOutputStream);
+
+            fileOutputStream.close();
+            fileInputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
             throw new IncorrectFileFormatException(ExceptionMessage.INCORRECT_FILE_FORMAT.toString());
