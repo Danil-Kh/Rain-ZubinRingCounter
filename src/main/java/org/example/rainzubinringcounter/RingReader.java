@@ -106,8 +106,8 @@ public class RingReader {
                         globalExceptionHandler.handleException(new TheHeaderTableException(ExceptionMessage.INCORRECT_TABLE_HANDLER.getMessage()));
                         return;
                     }
-
-                    String sentence = time + " " + name + " " + phrase;
+                    String nameWithOutSpaces = name.replace(" ", "");
+                    String sentence = time + " " + nameWithOutSpaces + " " + phrase;
                     String[] words = sentence.split("\\s+");
                     if (time.isEmpty() || name.isEmpty() || phrase.isEmpty()) {
                         errorsList.add("The cell is empty in the sentence: " + sentence);

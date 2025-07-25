@@ -18,6 +18,7 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPPr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTRPr;
 import org.springframework.stereotype.Controller;
 
+import javax.xml.crypto.Data;
 import java.io.File;
 
 import java.io.File;
@@ -25,10 +26,15 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.time.DateTimeException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,6 +44,8 @@ public class RingCounterController {
     private boolean isUpdatingSelection = false;
     private final FileChooser fileChooser = new FileChooser();
     private final RingReader ringReader = new RingReader();
+    private String fontFamily = "Calibri";
+    private int fontSize = 11;
 
     @FXML
     public CheckBox sumFile;
@@ -51,6 +59,8 @@ public class RingCounterController {
     public Circle circleDrag;
     @FXML
     public Button fileChooserButton;
+
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss");
 
     public RingCounterController() throws IOException {
     }
@@ -80,15 +90,22 @@ public class RingCounterController {
 
         fileChooserButton.setOnAction(event -> {
             StringBuilder sb = new StringBuilder();
+            XWPFDocument newWordDoc = new XWPFDocument();
+            String newFilePath;
+            try {
+                newFilePath = Paths.get(createDirectory(), "ring_All " + LocalDateTime.now().format(formatter) + ".docx").toString();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             textArea.clear();
             File file = fileChooser.showOpenDialog(fileChooserButton.getScene().getWindow());
             if (isValidFile(file)) {
-               globalExceptionHandler.handleException(
-                       new IncorrectFileFormatException(ExceptionMessage.INCORRECT_FILE_FORMAT.getMessage()));
-               return;
+                globalExceptionHandler.handleException(
+                        new IncorrectFileFormatException(ExceptionMessage.INCORRECT_FILE_FORMAT.getMessage()));
+                return;
             }
             PrintAllInformationAboutTheFileInTextField(file, sb);
-            safeCreateDocument(sb, file, true);
+            safeCreateDocument(sb, file, true, newWordDoc, newFilePath);
         });
         circleDrag.setOnDragDetected(event -> {
             System.out.println("\"file detected \" = " + "file detected ");
@@ -112,11 +129,23 @@ public class RingCounterController {
                 List<File> files = eventDragboard.getFiles();
 
                 if (sumFile.isSelected()) {
-                    handleSumFiles(files, eventDragboard);
+                    try {
+                        handleSumFiles(files, eventDragboard);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 } else if (splitFile.isSelected()) {
-                    handleSplitFiles(files, eventDragboard);
+                    try {
+                        handleSplitFiles(files, eventDragboard);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 } else {
-                    handleDefault(files, eventDragboard);
+                    try {
+                        handleDefault(files, eventDragboard);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
             event.consume();
@@ -129,47 +158,65 @@ public class RingCounterController {
         });
 }
 
-    private void handleDefault(List<File> files, Dragboard eventDragboard) {
+    private void handleDefault(List<File> files, Dragboard eventDragboard) throws IOException {
+        XWPFDocument newWordDoc = new XWPFDocument();
+        String newFilePath = getFileNameWithTime("ring_All");
         for (File file : files) {
             StringBuilder stringBuilder = new StringBuilder();
             PrintAllInformationAboutTheFileInTextField(file, stringBuilder, eventDragboard);
 
             if (!stringBuilder.isEmpty()) {
-                safeCreateDocument(stringBuilder, file, false);
+                safeCreateDocument(stringBuilder, file, false, newWordDoc, newFilePath);
             }
         }
     }
 
-    private void handleSplitFiles(List<File> files, Dragboard eventDragboard) {
+    private void handleSplitFiles(List<File> files, Dragboard eventDragboard) throws IOException {
+        XWPFDocument newWordDoc = new XWPFDocument();
         for (File file : files) {
             StringBuilder stringBuilder = new StringBuilder();
             PrintAllInformationAboutTheFileInTextField(file, stringBuilder, eventDragboard);
 
             if (!stringBuilder.isEmpty()) {
-                safeCreateDocument(stringBuilder, file, true);
+                safeCreateDocument(stringBuilder, file, true, newWordDoc, "");
             }
         }
     }
 
-    private void handleSumFiles(List<File> files, Dragboard eventDragboard) {
+    private void handleSumFiles(List<File> files, Dragboard eventDragboard) throws IOException {
         StringBuilder stringBuilder = new StringBuilder();
+        StringBuilder allFilesName = new StringBuilder("The sum consist of the next files: \n");
         ReaderResult readerResultForSum = null;
-
+        String newFilePath = getFileNameWithTime("sum_All");
+        XWPFDocument newWordDoc = new XWPFDocument();
         for (File file : files) {
             if (isValidFile(file)) continue;
-            readerResultForSum = ringReader.reader(file.getAbsolutePath(), true);
+            allFilesName.append(file.getName()).append("\n");
+            readerResultForSum = ringReader.reader(file.getAbsolutePath(), false);
             displayErrors(file, eventDragboard, readerResultForSum);
         }
 
         if (readerResultForSum != null) {
             printRingToTextArea(stringBuilder, files.getFirst(), readerResultForSum);
-            safeCreateDocument(stringBuilder, files.getFirst(),false);
+            int newlineIndex = stringBuilder.indexOf("\n");
+            if (newlineIndex != -1) {
+                stringBuilder.delete(0, newlineIndex + 1);
+            }
+
+            stringBuilder.insert(0, allFilesName);
+            stringBuilder.append("\n");
+            safeCreateDocument(stringBuilder, files.getFirst(),false, newWordDoc, newFilePath);
         }
     }
 
-    private void safeCreateDocument(StringBuilder content, File file, boolean splitOriginalFilesTexts) {
+    private String getFileNameWithTime(String fileName) throws IOException {
+        return Paths.get(createDirectory(), fileName + " " + LocalDateTime.now().format(formatter) + ".docx").toString();
+    }
+
+    private void safeCreateDocument(StringBuilder content, File file, boolean splitOriginalFilesTexts
+            , XWPFDocument newWordDoc, String newFilePath) {
         try {
-            createDocument(content, file, splitOriginalFilesTexts);
+            createDocument(content, file, splitOriginalFilesTexts, newWordDoc, newFilePath);
         } catch (IncorrectFileFormatException e) {
             globalExceptionHandler.handleException(e);
         }
@@ -253,9 +300,8 @@ public class RingCounterController {
         return dirPath;
     }
 
-    XWPFDocument newWordDoc = new XWPFDocument();
-    String newFilePath = Paths.get(createDirectory(), "ring_All.docx").toString();
-    private void createDocument(StringBuilder sb, File originalFile, boolean splitOriginalFilesTexts) throws IncorrectFileFormatException {
+    private void createDocument(StringBuilder sb, File originalFile, boolean splitOriginalFilesTexts
+            , XWPFDocument newWordDoc, String newFilePath) throws IncorrectFileFormatException {
         try {
             String dirPath = createDirectory();
 
@@ -266,12 +312,12 @@ public class RingCounterController {
                 newWordDoc = new XWPFDocument();
             }
 
-            XWPFParagraph samplePar = originalWordDoc.getParagraphs().isEmpty() ? null : originalWordDoc.getParagraphs().get(0);
+            XWPFParagraph samplePar =
+                    originalWordDoc.getParagraphs().isEmpty() ? null : originalWordDoc.getParagraphs().get(0);
+
             CTPPr samplePPr = (samplePar != null && samplePar.getCTP().getPPr() != null)
                     ? (CTPPr) samplePar.getCTP().getPPr().copy() : null;
 
-            String fontFamily = "Calibri";
-            int fontSize = 11;
             STVerticalAlignRun.Enum verticalAlignment = null;
             if (!originalWordDoc.getParagraphs().isEmpty()) {
                 XWPFParagraph firstParagraph = originalWordDoc.getParagraphs().get(0);
@@ -302,6 +348,7 @@ public class RingCounterController {
                 }
                 if (verticalAlignment != null) run.setVerticalAlignment(verticalAlignment.toString());
             }
+
             sb.delete(sb.length() - 1, sb.length());
             for (IBodyElement elem : originalWordDoc.getBodyElements()) {
                 if (elem instanceof XWPFParagraph origPar) {
