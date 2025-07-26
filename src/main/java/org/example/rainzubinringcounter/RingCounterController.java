@@ -9,6 +9,7 @@ import javafx.scene.shape.Circle;
 import javafx.stage.FileChooser;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.*;
+import org.apache.xmlbeans.XmlCursor;
 import org.example.rainzubinringcounter.exception.ExceptionMessage;
 import org.example.rainzubinringcounter.exception.GlobalExceptionHandler;
 import org.example.rainzubinringcounter.exception.IncorrectFileFormatException;
@@ -16,6 +17,7 @@ import org.openxmlformats.schemas.officeDocument.x2006.sharedTypes.STVerticalAli
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTP;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPPr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTRPr;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTbl;
 import org.springframework.stereotype.Controller;
 
 import javax.xml.crypto.Data;
@@ -349,7 +351,7 @@ public class RingCounterController {
 
             sb.delete(sb.length() - 1, sb.length());
             for (IBodyElement elem : originalWordDoc.getBodyElements()) {
-                if (elem instanceof XWPFParagraph origPar && addTheOriginalFilePart) {
+                if (elem instanceof XWPFParagraph origPar && addTheOriginalFilePart && !origPar.getRuns().isEmpty()) {
                     XWPFParagraph newPar = newWordDoc.createParagraph();
 
                     if (origPar.getCTP().getPPr() != null)
@@ -372,7 +374,7 @@ public class RingCounterController {
                     newPar.setSpacingBefore(spacingBefore);
                     newPar.setSpacingAfter(spacingAfter);
                     newPar.setSpacingBetween(spacingBetween);
-
+                    List<XWPFRun>  origRun1 = origPar.getRuns();
                     for (XWPFRun origRun : origPar.getRuns()) {
                         XWPFRun newRun = newPar.createRun();
                         if (origRun.getCTR().getRPr() != null)
@@ -385,7 +387,6 @@ public class RingCounterController {
                     try {
                         newTable.getCTTbl().set(origTable.getCTTbl().copy());
                         newTable.getCTTbl().setTblGrid(origTable.getCTTbl().getTblGrid());
-
                     } catch (Exception ex) {
                         for (XWPFTableRow row : origTable.getRows()) {
                             XWPFTableRow newRow = newTable.createRow();
