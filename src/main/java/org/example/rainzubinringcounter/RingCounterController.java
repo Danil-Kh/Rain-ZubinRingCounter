@@ -7,14 +7,12 @@ import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.shape.Circle;
 import javafx.stage.FileChooser;
-import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.*;
 import org.apache.xmlbeans.XmlCursor;
 import org.example.rainzubinringcounter.exception.ExceptionMessage;
 import org.example.rainzubinringcounter.exception.GlobalExceptionHandler;
 import org.example.rainzubinringcounter.exception.IncorrectFileFormatException;
 import org.openxmlformats.schemas.officeDocument.x2006.sharedTypes.STVerticalAlignRun;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTP;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPPr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTRPr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTbl;
@@ -23,7 +21,6 @@ import org.springframework.stereotype.Controller;
 import javax.xml.crypto.Data;
 import java.io.File;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -103,11 +100,11 @@ public class RingCounterController {
             textArea.clear();
             File file = fileChooser.showOpenDialog(fileChooserButton.getScene().getWindow());
             if (isValidFile(file)) {
-                globalExceptionHandler.handleException(
-                        new IncorrectFileFormatException(ExceptionMessage.INCORRECT_FILE_FORMAT.getMessage()));
-                return;
+               globalExceptionHandler.handleException(
+                       new IncorrectFileFormatException(ExceptionMessage.INCORRECT_FILE_FORMAT.getMessage()));
+               return;
             }
-            PrintAllInformationAboutTheFileInTextField(file, sb);
+            PrintAllInformationAboutTheFileInTextField(file, sb, null);
             safeCreateDocument(sb, file, true, newWordDoc, newFilePath, true);
         });
         circleDrag.setOnDragDetected(event -> {
@@ -117,7 +114,7 @@ public class RingCounterController {
             content.putString("file");
             db.setContent(content);
             event.consume();
-        });
+    });
         circleDrag.setOnDragOver(event -> {
             if (event.getGestureSource() != circleDrag &&
                     event.getDragboard().hasFiles()) {
@@ -146,7 +143,6 @@ public class RingCounterController {
             }
         });
 }
-
     private void safeFileCreationFunctionCall(IOThrowingFunction function) {
         try {
             function.apply();
@@ -154,14 +150,12 @@ public class RingCounterController {
             throw new RuntimeException(e);
         }
     }
-
     private void handleDefault(List<File> files, Dragboard eventDragboard) throws IOException {
         XWPFDocument newWordDoc = new XWPFDocument();
         String newFilePath = getFileNameWithTime("ring_All");
         for (File file : files) {
             StringBuilder stringBuilder = new StringBuilder();
             PrintAllInformationAboutTheFileInTextField(file, stringBuilder, eventDragboard);
-
             if (!stringBuilder.isEmpty()) {
                 safeCreateDocument(stringBuilder, file, false, newWordDoc, newFilePath, true);
             }
@@ -169,15 +163,20 @@ public class RingCounterController {
     }
 
     private void handleSplitFiles(List<File> files, Dragboard eventDragboard) throws IOException {
+        StringBuilder fullReportBuilder = new StringBuilder();
         XWPFDocument newWordDoc = new XWPFDocument();
         for (File file : files) {
-            StringBuilder stringBuilder = new StringBuilder();
-            PrintAllInformationAboutTheFileInTextField(file, stringBuilder, eventDragboard);
+            StringBuilder singleFileBuilder = new StringBuilder();
 
-            if (!stringBuilder.isEmpty()) {
-                safeCreateDocument(stringBuilder, file, true, newWordDoc, "", true);
+            PrintAllInformationAboutTheFileInTextField(file, singleFileBuilder, eventDragboard);
+
+            fullReportBuilder.append(singleFileBuilder).append("\n");
+
+            if (!fullReportBuilder.isEmpty()) {
+                safeCreateDocument(fullReportBuilder, file, true, newWordDoc, "", true);
             }
         }
+        textArea.setText(fullReportBuilder.toString());
     }
 
     private void handleSumFiles(List<File> files, Dragboard eventDragboard) throws IOException {
@@ -229,17 +228,6 @@ public class RingCounterController {
         displayErrors(file, eventDragboard, readerResult);
     }
 
-    private void PrintAllInformationAboutTheFileInTextField(File file
-            , StringBuilder stringBuilder) {
-        if (isValidFile(file)) {
-            return;
-        }
-        ReaderResult readerResult = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
-        printRingToTextArea(stringBuilder, file, readerResult);
-        displayErrors(file, readerResult);
-    }
-
-
     private void printRingToTextArea(StringBuilder sb, File file, ReaderResult readerResult) {
         HashMap<String, Integer> resultToPrintRing;
         Map<String, List<String>> resultToPrintNameToTime;
@@ -265,17 +253,13 @@ public class RingCounterController {
     }
 
     private void displayErrors(File file, Dragboard db, ReaderResult readerResult) {
-        StringBuilder sb = new StringBuilder();
-        if (db.getFiles().getFirst().equals(file)) {
+        if (db == null || db.getFiles().getFirst().equals(file)) {
             textAreaError.clear();
         }
-        rederResult(file, sb, readerResult);
-    }
-    private void displayErrors(File file, ReaderResult readerResult) {
-        textAreaError.clear();
         StringBuilder sb = new StringBuilder();
         rederResult(file, sb, readerResult);
     }
+
 
     private void rederResult(File file, StringBuilder sb, ReaderResult readerResult) {
         for (String error : readerResult.getErrorsList()) {
