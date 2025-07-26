@@ -187,7 +187,7 @@ public class RingCounterController {
         for (File file : files) {
             if (isValidFile(file)) continue;
             allFilesName.append(file.getName()).append("\n");
-            readerResultForSum = ringReader.reader(file.getAbsolutePath(), false);
+            readerResultForSum = ringReader.reader(file.getAbsolutePath(), true);
             displayErrors(file, eventDragboard, readerResultForSum);
         }
 
