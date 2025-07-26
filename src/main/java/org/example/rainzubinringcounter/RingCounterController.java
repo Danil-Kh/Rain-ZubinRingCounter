@@ -8,23 +8,34 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.shape.Circle;
 import javafx.stage.FileChooser;
 import org.apache.poi.xwpf.usermodel.*;
+import org.apache.xmlbeans.XmlCursor;
 import org.example.rainzubinringcounter.exception.ExceptionMessage;
 import org.example.rainzubinringcounter.exception.GlobalExceptionHandler;
 import org.example.rainzubinringcounter.exception.IncorrectFileFormatException;
 import org.openxmlformats.schemas.officeDocument.x2006.sharedTypes.STVerticalAlignRun;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPPr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTRPr;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTbl;
 import org.springframework.stereotype.Controller;
 
+import javax.xml.crypto.Data;
 import java.io.File;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.time.DateTimeException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Controller
 public class RingCounterController {
@@ -32,6 +43,8 @@ public class RingCounterController {
     private boolean isUpdatingSelection = false;
     private final FileChooser fileChooser = new FileChooser();
     private final RingReader ringReader = new RingReader();
+    private String fontFamily = "Arial";
+    private int fontSize = 14;
 
     @FXML
     public CheckBox sumFile;
@@ -45,6 +58,11 @@ public class RingCounterController {
     public Circle circleDrag;
     @FXML
     public Button fileChooserButton;
+
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss");
+
+    public RingCounterController() throws IOException {
+    }
 
     @FXML
     private void initialize() {
@@ -69,8 +87,16 @@ public class RingCounterController {
             }
         });
 
+
         fileChooserButton.setOnAction(event -> {
             StringBuilder sb = new StringBuilder();
+            XWPFDocument newWordDoc = new XWPFDocument();
+            String newFilePath;
+            try {
+                newFilePath = Paths.get(createDirectory(), "ring_All " + LocalDateTime.now().format(formatter) + ".docx").toString();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             textArea.clear();
             File file = fileChooser.showOpenDialog(fileChooserButton.getScene().getWindow());
             if (isValidFile(file)) {
@@ -79,7 +105,7 @@ public class RingCounterController {
                return;
             }
             PrintAllInformationAboutTheFileInTextField(file, sb, null);
-            safeCreateDocument(sb, file.getName(), file.getAbsolutePath());
+            safeCreateDocument(sb, file, true, newWordDoc, newFilePath, true);
         });
         circleDrag.setOnDragDetected(event -> {
             System.out.println("\"file detected \" = " + "file detected ");
@@ -101,39 +127,44 @@ public class RingCounterController {
             textArea.clear();
             if (eventDragboard.hasFiles()) {
                 List<File> files = eventDragboard.getFiles();
-
                 if (sumFile.isSelected()) {
-                    handleSumFiles(files, eventDragboard);
+                    safeFileCreationFunctionCall(() -> handleSumFiles(files, eventDragboard));
                 } else if (splitFile.isSelected()) {
-                    handleSplitFiles(files, eventDragboard);
+                    safeFileCreationFunctionCall(() -> handleSplitFiles(files, eventDragboard));
                 } else {
-                    handleDefault(files, eventDragboard);
+                    safeFileCreationFunctionCall(() -> handleDefault(files, eventDragboard));
                 }
             }
             event.consume();
         });
-
         sumFile.setOnAction(event -> {
             if (sumFile.isSelected()) {
                 ringReader.hashMap.clear();
             }
         });
 }
-
-    private void handleDefault(List<File> files, Dragboard eventDragboard) {
-        StringBuilder stringBuilder = new StringBuilder();
-        for (File file : files) {
-            PrintAllInformationAboutTheFileInTextField(file, stringBuilder, eventDragboard);
+    private void safeFileCreationFunctionCall(IOThrowingFunction function) {
+        try {
+            function.apply();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-
-        if (!stringBuilder.isEmpty()) {
-            safeCreateDocument(stringBuilder, files.getFirst().getName(), files.getFirst().getAbsolutePath());
+    }
+    private void handleDefault(List<File> files, Dragboard eventDragboard) throws IOException {
+        XWPFDocument newWordDoc = new XWPFDocument();
+        String newFilePath = getFileNameWithTime("ring_All");
+        for (File file : files) {
+            StringBuilder stringBuilder = new StringBuilder();
+            PrintAllInformationAboutTheFileInTextField(file, stringBuilder, eventDragboard);
+            if (!stringBuilder.isEmpty()) {
+                safeCreateDocument(stringBuilder, file, false, newWordDoc, newFilePath, true);
+            }
         }
     }
 
-    private void handleSplitFiles(List<File> files, Dragboard eventDragboard) {
+    private void handleSplitFiles(List<File> files, Dragboard eventDragboard) throws IOException {
         StringBuilder fullReportBuilder = new StringBuilder();
-
+        XWPFDocument newWordDoc = new XWPFDocument();
         for (File file : files) {
             StringBuilder singleFileBuilder = new StringBuilder();
 
@@ -141,32 +172,47 @@ public class RingCounterController {
 
             fullReportBuilder.append(singleFileBuilder).append("\n");
 
-            if (!singleFileBuilder.isEmpty()) {
-                safeCreateDocument(singleFileBuilder, file.getName(), file.getAbsolutePath());
+            if (!fullReportBuilder.isEmpty()) {
+                safeCreateDocument(fullReportBuilder, file, true, newWordDoc, "", true);
             }
         }
         textArea.setText(fullReportBuilder.toString());
     }
 
-    private void handleSumFiles(List<File> files, Dragboard eventDragboard) {
+    private void handleSumFiles(List<File> files, Dragboard eventDragboard) throws IOException {
         StringBuilder stringBuilder = new StringBuilder();
+        StringBuilder allFilesName = new StringBuilder("The sum consist of the next files: \n");
         ReaderResult readerResultForSum = null;
-
+        String newFilePath = getFileNameWithTime("sum_All");
+        XWPFDocument newWordDoc = new XWPFDocument();
         for (File file : files) {
             if (isValidFile(file)) continue;
+            allFilesName.append(file.getName()).append("\n");
             readerResultForSum = ringReader.reader(file.getAbsolutePath(), true);
             displayErrors(file, eventDragboard, readerResultForSum);
         }
 
         if (readerResultForSum != null) {
             printRingToTextArea(stringBuilder, files.getFirst(), readerResultForSum);
-            safeCreateDocument(stringBuilder, files.getFirst().getName(), files.getFirst().getAbsolutePath());
+            int newlineIndex = stringBuilder.indexOf("\n");
+            if (newlineIndex != -1) {
+                stringBuilder.delete(0, newlineIndex + 1);
+            }
+
+            stringBuilder.insert(0, allFilesName);
+            stringBuilder.append("\n");
+            safeCreateDocument(stringBuilder, files.getFirst(),false, newWordDoc, newFilePath, false);
         }
     }
 
-    private void safeCreateDocument(StringBuilder content, String fileName, String absolutePath) {
+    private String getFileNameWithTime(String fileName) throws IOException {
+        return Paths.get(createDirectory(), fileName + " " + LocalDateTime.now().format(formatter) + ".docx").toString();
+    }
+
+    private void safeCreateDocument(StringBuilder content, File file, boolean splitOriginalFilesTexts
+            , XWPFDocument newWordDoc, String newFilePath, boolean addTheOriginalFilePart) {
         try {
-            createDocument(content, fileName, absolutePath);
+            createDocument(content, file, splitOriginalFilesTexts, newWordDoc, newFilePath, addTheOriginalFilePart);
         } catch (IncorrectFileFormatException e) {
             globalExceptionHandler.handleException(e);
         }
@@ -223,33 +269,39 @@ public class RingCounterController {
         sb.setLength(0);
     }
 
-    private void createDocument(StringBuilder sb, String fileName, String absolutePath) throws IncorrectFileFormatException {
+    private String createDirectory() throws IOException {
+        String userHome = System.getProperty("user.home");
+        String dirPath = Paths.get(userHome, "Documents", "GeneratedDocs").toString();
+        File dir = new File(dirPath);
+
+        boolean dirCreated = dir.mkdirs();
+        if (!dir.exists() && !dirCreated) {
+            throw new IOException("Failed to create directory: " + dirPath);
+        }
+        return dirPath;
+    }
+
+    private void createDocument(StringBuilder sb, File originalFile, boolean splitOriginalFilesTexts
+            , XWPFDocument newWordDoc, String newFilePath, boolean addTheOriginalFilePart) throws IncorrectFileFormatException {
         try {
-            String userHome = System.getProperty("user.home");
-            String dirPath = Paths.get(userHome, "Documents", "GeneratedDocs").toString();
-            File dir = new File(dirPath);
-
-            boolean dirCreated = dir.mkdirs();
-            if (!dir.exists() && !dirCreated) {
-                throw new IOException("Failed to create directory: " + dirPath);
-            }
-
-            File originalFile = new File(absolutePath);
-            String newFilePath = Paths.get(dirPath, "ring_" + fileName).toString();
+            String dirPath = createDirectory();
 
             FileInputStream fileInputStream = new FileInputStream(originalFile);
-            XWPFDocument originalDoc = new XWPFDocument(fileInputStream);
-            XWPFDocument xwpfDocument = new XWPFDocument();
+            XWPFDocument originalWordDoc = new XWPFDocument(fileInputStream);
+            if (splitOriginalFilesTexts) {
+                newFilePath = Paths.get(dirPath, "ring_" + originalFile.getName()).toString();
+                newWordDoc = new XWPFDocument();
+            }
 
-            XWPFParagraph samplePar = originalDoc.getParagraphs().isEmpty() ? null : originalDoc.getParagraphs().get(0);
+            XWPFParagraph samplePar =
+                    originalWordDoc.getParagraphs().isEmpty() ? null : originalWordDoc.getParagraphs().get(0);
+
             CTPPr samplePPr = (samplePar != null && samplePar.getCTP().getPPr() != null)
                     ? (CTPPr) samplePar.getCTP().getPPr().copy() : null;
 
-            String fontFamily = "Calibri";
-            int fontSize = 11;
             STVerticalAlignRun.Enum verticalAlignment = null;
-            if (!originalDoc.getParagraphs().isEmpty()) {
-                XWPFParagraph firstParagraph = originalDoc.getParagraphs().get(0);
+            if (!originalWordDoc.getParagraphs().isEmpty()) {
+                XWPFParagraph firstParagraph = originalWordDoc.getParagraphs().get(0);
                 if (!firstParagraph.getRuns().isEmpty()) {
                     XWPFRun firstRun = firstParagraph.getRuns().get(0);
                     if (firstRun.getFontFamily() != null) fontFamily = firstRun.getFontFamily();
@@ -258,24 +310,33 @@ public class RingCounterController {
                 }
             }
 
+            if (addTheOriginalFilePart){
+                String textForTheNameOfTheFile = "\nOriginal text from the file: " + originalFile.getName();
+                sb.append(textForTheNameOfTheFile);
+            }
+
             String[] lines = sb.toString().split("\n");
+
             for (String line : lines) {
-                XWPFParagraph paragraph = xwpfDocument.createParagraph();
+                XWPFParagraph paragraph = newWordDoc.createParagraph();
                 if (samplePPr != null) {
                     paragraph.getCTP().setPPr((CTPPr) samplePPr.copy());
                 }
-
                 XWPFRun run = paragraph.createRun();
                 run.setText(line);
                 run.setFontFamily(fontFamily);
                 run.setFontSize(fontSize);
+                if (Objects.equals(lines[lines.length - 1], line))
+                {
+                    run.setBold(true);
+                }
                 if (verticalAlignment != null) run.setVerticalAlignment(verticalAlignment.toString());
             }
 
-            for (IBodyElement elem : originalDoc.getBodyElements()) {
-                if (elem instanceof XWPFParagraph) {
-                    XWPFParagraph origPar =  (XWPFParagraph) elem;
-                    XWPFParagraph newPar = xwpfDocument.createParagraph();
+            sb.delete(sb.length() - 1, sb.length());
+            for (IBodyElement elem : originalWordDoc.getBodyElements()) {
+                if (elem instanceof XWPFParagraph origPar && addTheOriginalFilePart && !origPar.getRuns().isEmpty()) {
+                    XWPFParagraph newPar = newWordDoc.createParagraph();
 
                     if (origPar.getCTP().getPPr() != null)
                         newPar.getCTP().setPPr((CTPPr) origPar.getCTP().getPPr().copy());
@@ -297,7 +358,7 @@ public class RingCounterController {
                     newPar.setSpacingBefore(spacingBefore);
                     newPar.setSpacingAfter(spacingAfter);
                     newPar.setSpacingBetween(spacingBetween);
-
+                    List<XWPFRun>  origRun1 = origPar.getRuns();
                     for (XWPFRun origRun : origPar.getRuns()) {
                         XWPFRun newRun = newPar.createRun();
                         if (origRun.getCTR().getRPr() != null)
@@ -305,11 +366,11 @@ public class RingCounterController {
                         newRun.setText(origRun.text());
                     }
 
-                } else if (elem instanceof XWPFTable) {
-                    XWPFTable origTable = (XWPFTable) elem;
-                    XWPFTable newTable = xwpfDocument.createTable();
+                } else if (elem instanceof XWPFTable origTable && addTheOriginalFilePart) {
+                    XWPFTable newTable = newWordDoc.createTable();
                     try {
                         newTable.getCTTbl().set(origTable.getCTTbl().copy());
+                        newTable.getCTTbl().setTblGrid(origTable.getCTTbl().getTblGrid());
                     } catch (Exception ex) {
                         for (XWPFTableRow row : origTable.getRows()) {
                             XWPFTableRow newRow = newTable.createRow();
@@ -323,7 +384,7 @@ public class RingCounterController {
                 }
             }
             FileOutputStream fileOutputStream = new FileOutputStream(newFilePath);
-            xwpfDocument.write(fileOutputStream);
+            newWordDoc.write(fileOutputStream);
 
             fileOutputStream.close();
             fileInputStream.close();
