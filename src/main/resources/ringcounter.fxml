@@ -42,8 +42,10 @@
                <padding>
                   <Insets bottom="10.0" top="10.0" />
                </padding>
-               <CheckBox fx:id="sumFile" style="-fx-font-size: 14px; -fx-text-fill: #2c3e50;" text="Summarize files" />
-               <CheckBox fx:id="splitFile" style="-fx-font-size: 14px; -fx-text-fill: #2c3e50;" text="Split files" />
+               <VBox spacing="5">
+                  <CheckBox fx:id="sumFile" style="-fx-font-size: 14px; -fx-text-fill: #2c3e50;" text="Summarize files" />
+                  <CheckBox fx:id="splitFile" style="-fx-font-size: 14px; -fx-text-fill: #2c3e50;" text="Split files" />
+               </VBox>
                <Button fx:id="fileChooserButton" style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 10 20; -fx-background-radius: 5; -fx-cursor: hand;" text="Select file">
                   <effect>
                      <DropShadow color="#00000044" radius="5" spread="0.05" />
