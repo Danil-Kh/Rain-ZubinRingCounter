@@ -70,7 +70,7 @@ public class RingReader {
             String sentence = paragraph.getText();
             String[] words = sentence.split("\\s+");
             if (skipFirstNames) {
-                validateRing(sentence, words, true);
+                validateRing(sentence, words);
             }
             else {
                 if (pattern.matcher(sentence).matches()) {
@@ -79,7 +79,7 @@ public class RingReader {
                         continue;
                     }
                     else {
-                        validateRing(sentence, words, true);
+                        validateRing(sentence, words);
                         skipFirstNames = true;
                     }
                 }
@@ -106,14 +106,15 @@ public class RingReader {
                         globalExceptionHandler.handleException(new TheHeaderTableException(ExceptionMessage.INCORRECT_TABLE_HANDLER.getMessage()));
                         return;
                     }
-                    String nameWithOutSpaces = name.replace(" ", "");
-                    String sentence = time + " " + nameWithOutSpaces + " " + phrase;
+                    name = name.split("\\(")[0];
+                    String sentence = time + " " + name + "\t" + phrase;
                     String[] words = sentence.split("\\s+");
+
                     if (time.isEmpty() || name.isEmpty() || phrase.isEmpty()) {
                         errorsList.add("The cell is empty in the sentence: " + sentence);
                         continue;
                     }
-                    validateRing(sentence, words, false);
+                    validateRing(sentence, words);
                 }
                 else {
                     writeError("The row must have 3 cells" + row);
@@ -122,7 +123,7 @@ public class RingReader {
         }
     }
 
-    private void validateRing(String sentence, String[] words, boolean isForParagraph){
+    private void validateRing(String sentence, String[] words){
         if (words.length > 0){
             if (words.length >= MIN_WORDS_TO_RING){
                 boolean isValidDouble = isValidDouble(words[0]);
@@ -133,9 +134,7 @@ public class RingReader {
 
                 if (isValidDouble && hasTheName){
                     int errorsListCount = errorsList.size();
-                    if (isForParagraph){
-                        words[1] = createTheName(sentence);
-                    }
+                    words[1] = createTheName(sentence);
                     if (errorsList.size() - 1 != errorsListCount){
                         Ring ring = new Ring(words[0], words[1], words[2]);
                         ringList.add(ring);

@@ -359,7 +359,6 @@ public class RingCounterController {
                     newPar.setSpacingBefore(spacingBefore);
                     newPar.setSpacingAfter(spacingAfter);
                     newPar.setSpacingBetween(spacingBetween);
-                    List<XWPFRun>  origRun1 = origPar.getRuns();
                     for (XWPFRun origRun : origPar.getRuns()) {
                         XWPFRun newRun = newPar.createRun();
                         if (origRun.getCTR().getRPr() != null)
