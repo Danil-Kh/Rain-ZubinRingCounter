@@ -186,6 +186,7 @@ public class RingCounterController {
         ReaderResult readerResultForSum = null;
         String newFilePath = getFileNameWithTime("sum_All");
         XWPFDocument newWordDoc = new XWPFDocument();
+        readerResultForSum = ringReader.reader(" ", false);
         for (File file : files) {
             if (isValidFile(file)) continue;
             allFilesName.append(file.getName()).append("\n");
