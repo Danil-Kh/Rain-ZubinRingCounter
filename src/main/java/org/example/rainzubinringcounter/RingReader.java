@@ -21,7 +21,8 @@ public class RingReader {
 
     private static final Integer MIN_WORDS_TO_RING = 2;
     private List<Ring> ringList;
-    public final HashMap<String, Integer> hashMap = new HashMap<>();
+    public HashMap<String, Integer> hashMap = new HashMap<>();
+    Map<String, Integer> sortedHashMap;
     public final List<String> errorsList = new ArrayList<>();
     private final Map<String, List<String>> nameToTimes = new HashMap<>();
     private final GlobalExceptionHandler globalExceptionHandler = new GlobalExceptionHandler();
@@ -52,11 +53,11 @@ public class RingReader {
                     hashMap.put(ring.getName(), 1);
                 }
             }
-
+            sortedHashMap = new TreeMap<>(hashMap);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return new ReaderResult(hashMap, errorsList, nameToTimes);
+        return new ReaderResult(errorsList, nameToTimes, sortedHashMap);
     }
 
     private void nameToTimesScore(Ring ring) {
@@ -127,7 +128,6 @@ public class RingReader {
         if (words.length > 0){
             if (words.length >= MIN_WORDS_TO_RING){
                 boolean isValidDouble = isValidDouble(words[0]);
-                //Pattern pattern = Pattern.compile("^[\\p{Lu}\\-_/.;:,]+$");
                 Pattern pattern = Pattern.compile("^[\\p{Lu}\\p{N}\\-_/.;:,]+$");
                 Matcher matcher = pattern.matcher(words[1]);
                 boolean hasTheName = matcher.matches();

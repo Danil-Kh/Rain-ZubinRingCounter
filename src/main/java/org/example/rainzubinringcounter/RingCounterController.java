@@ -231,9 +231,11 @@ public class RingCounterController {
     }
 
     private void printRingToTextArea(StringBuilder sb, File file, ReaderResult readerResult) {
-        HashMap<String, Integer> resultToPrintRing;
+        Map<String, Integer> resultToPrintRing;
+        //HashMap<String, Integer> resultToPrintRing;
         Map<String, List<String>> resultToPrintNameToTime;
-        resultToPrintRing = readerResult.getHashMap();
+        //resultToPrintRing = readerResult.getHashMap();
+        resultToPrintRing = readerResult.getSortedMap();
         resultToPrintNameToTime = readerResult.getNameToTimes();
 
         sb.append("---").append(file.getName()).append("---").append("\n");

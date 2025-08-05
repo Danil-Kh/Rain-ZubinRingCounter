@@ -7,6 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -21,7 +22,7 @@ class RingReaderTest {
         String pathToTheFile = "Documents/NARUTO - S01E28.docx";
 
         ReaderResult stringIntegerHashtable = ringReader.reader(pathToTheFile, false);
-        HashMap<String, Integer> hashMap = stringIntegerHashtable.getHashMap();
+        Map<String, Integer> hashMap = stringIntegerHashtable.getSortedMap();
         assertEquals(1, hashMap.get("НІНДЖЯ ТРАВИ"));
         assertTrue(stringIntegerHashtable.getErrorsList().size() < 8);
     }
@@ -44,7 +45,7 @@ class RingReaderTest {
         String pathToTheFile = "Documents/NARUTO - S01E33_ed.docx";
         ReaderResult stringIntegerHashtable = ringReader.reader(pathToTheFile, false);
 
-        assertEquals(15, stringIntegerHashtable.getHashMap().size());
-        assertEquals(9, stringIntegerHashtable.getHashMap().get("МАЛИЙ САСУКЕ"));
+        assertEquals(15, stringIntegerHashtable.getSortedMap().size());
+        assertEquals(9, stringIntegerHashtable.getSortedMap().get("МАЛИЙ САСУКЕ"));
     }
 }
