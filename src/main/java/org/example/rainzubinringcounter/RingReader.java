@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.text.Collator;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,17 +22,19 @@ public class RingReader {
 
     private static final Integer MIN_WORDS_TO_RING = 2;
     private List<Ring> ringList;
-    public HashMap<String, Integer> hashMap = new HashMap<>();
-    Map<String, Integer> sortedHashMap;
+    private final Collator ukrLang = Collator.getInstance(new Locale("uk", "UA"));
+    public Map<String, Integer> sortedHashMap = new TreeMap<>(ukrLang);
     public final List<String> errorsList = new ArrayList<>();
     private final Map<String, List<String>> nameToTimes = new HashMap<>();
     private final GlobalExceptionHandler globalExceptionHandler = new GlobalExceptionHandler();
+
+
 
     public ReaderResult reader(String docxPath, boolean calculateTheSumOfRings){
         ringList = new ArrayList<>();
         errorsList.clear();
         if (!calculateTheSumOfRings){
-            hashMap.clear();
+            sortedHashMap.clear();
             nameToTimes.clear();
         }
 
@@ -47,13 +50,12 @@ public class RingReader {
 
             for (Ring ring : ringList) {
                 nameToTimesScore(ring);
-                if (hashMap.containsKey(ring.getName())) {
-                    hashMap.put(ring.getName(), hashMap.get(ring.getName()) + 1);
+                if (sortedHashMap.containsKey(ring.getName())) {
+                    sortedHashMap.put(ring.getName(), sortedHashMap.get(ring.getName()) + 1);
                 } else {
-                    hashMap.put(ring.getName(), 1);
+                    sortedHashMap.put(ring.getName(), 1);
                 }
             }
-            sortedHashMap = new TreeMap<>(hashMap);
         } catch (IOException e) {
             e.printStackTrace();
         }
