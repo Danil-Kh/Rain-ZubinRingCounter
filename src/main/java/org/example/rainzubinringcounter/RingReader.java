@@ -28,14 +28,11 @@ public class RingReader {
     private final Map<String, List<String>> nameToTimes = new HashMap<>();
     private final GlobalExceptionHandler globalExceptionHandler = new GlobalExceptionHandler();
 
-
-
     public ReaderResult reader(String docxPath, boolean calculateTheSumOfRings){
         ringList = new ArrayList<>();
         errorsList.clear();
         if (!calculateTheSumOfRings){
-            sortedHashMap.clear();
-            nameToTimes.clear();
+            clearSortedHashMapAndNameToTimes();
         }
 
         try (FileInputStream fis = new FileInputStream(docxPath);
@@ -64,6 +61,11 @@ public class RingReader {
 
     private void nameToTimesScore(Ring ring) {
             nameToTimes.computeIfAbsent(ring.getName(), k -> new ArrayList<>()).add(ring.getTime());
+    }
+
+    public void clearSortedHashMapAndNameToTimes() {
+        sortedHashMap.clear();
+        nameToTimes.clear();
     }
 
     private void dealWithRingsInParagraph(XWPFDocument document) {
