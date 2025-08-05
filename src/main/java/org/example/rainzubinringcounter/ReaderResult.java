@@ -11,12 +11,14 @@ import java.util.Map;
 @Getter
 
 public class ReaderResult {
-    private HashMap<String, Integer> hashMap;
+    //private HashMap<String, Integer> hashMap;
     private List<String> errorsList;
     private Map<String, List<String>> nameToTimes;
+    private Map<String, Integer> sortedMap;
 
-    public ReaderResult(HashMap<String, Integer> hashMap, List<String> errorsList, Map<String, List<String>> nameToTimes) {
-        this.hashMap = hashMap;
+    public ReaderResult(List<String> errorsList, Map<String, List<String>> nameToTimes, Map<String, Integer> sortedMap) {
+        this.sortedMap = sortedMap;
+        //this.hashMap = hashMap;
         this.errorsList = errorsList;
         this.nameToTimes = nameToTimes;
     }
