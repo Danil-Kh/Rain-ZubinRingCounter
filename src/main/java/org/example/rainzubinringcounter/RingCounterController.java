@@ -185,7 +185,8 @@ public class RingCounterController {
         ReaderResult readerResultForSum = null;
         String newFilePath = getFileNameWithTime("sum_All");
         XWPFDocument newWordDoc = new XWPFDocument();
-        readerResultForSum = ringReader.reader(" ", false);
+
+        ringReader.clearSortedHashMapAndNameToTimes();
         for (File file : files) {
             if (isValidFile(file)) continue;
             allFilesName.append(file.getName()).append("\n");
@@ -231,9 +232,8 @@ public class RingCounterController {
 
     private void printRingToTextArea(StringBuilder sb, File file, ReaderResult readerResult) {
         Map<String, Integer> resultToPrintRing;
-        //HashMap<String, Integer> resultToPrintRing;
+
         Map<String, List<String>> resultToPrintNameToTime;
-        //resultToPrintRing = readerResult.getHashMap();
         resultToPrintRing = readerResult.getSortedMap();
         resultToPrintNameToTime = readerResult.getNameToTimes();
 
