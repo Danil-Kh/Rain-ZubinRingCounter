@@ -41,15 +41,16 @@ public class RingReader {
             else {
                 dealWithRingsInTable(originalDocument);
             }
-
-            for (Ring ring : ringList) {
-                nameToTimesScore(ring);
-                if (sortedHashMap.containsKey(ring.getName())) {
-                    sortedHashMap.put(ring.getName(), sortedHashMap.get(ring.getName()) + 1);
-                }
-                else {
-                    sortedHashMap.put(ring.getName(), 1);
-                }
+                for (Ring ring : ringList) {
+                    if (!calculateTheSumOfRings) {
+                        nameToTimesScore(ring);
+                    }
+                    if (sortedHashMap.containsKey(ring.getName())) {
+                        sortedHashMap.put(ring.getName(), sortedHashMap.get(ring.getName()) + 1);
+                    }
+                    else {
+                        sortedHashMap.put(ring.getName(), 1);
+                    }
             }
         }
         catch (IOException e) {
