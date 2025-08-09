@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -73,7 +72,7 @@ public class RingCounterController {
             if (isNowSelected) {
                 isUpdatingSelection = true;
                 splitFile.setSelected(false);
-                ringReader.hashMap.clear();
+                ringReader.sortedHashMap.clear();
                 isUpdatingSelection = false;
             }
         });
@@ -140,7 +139,7 @@ public class RingCounterController {
         });
         sumFile.setOnAction(event -> {
             if (sumFile.isSelected()) {
-                ringReader.hashMap.clear();
+                ringReader.sortedHashMap.clear();
             }
         });
 }
@@ -186,7 +185,8 @@ public class RingCounterController {
         ReaderResult readerResultForSum = null;
         String newFilePath = getFileNameWithTime("sum_All");
         XWPFDocument newWordDoc = new XWPFDocument();
-        readerResultForSum = ringReader.reader(" ", false);
+
+        ringReader.clearSortedHashMapAndNameToTimes();
         for (File file : files) {
             if (isValidFile(file)) continue;
             allFilesName.append(file.getName()).append("\n");
@@ -231,9 +231,10 @@ public class RingCounterController {
     }
 
     private void printRingToTextArea(StringBuilder sb, File file, ReaderResult readerResult) {
-        HashMap<String, Integer> resultToPrintRing;
+        Map<String, Integer> resultToPrintRing;
+
         Map<String, List<String>> resultToPrintNameToTime;
-        resultToPrintRing = readerResult.getHashMap();
+        resultToPrintRing = readerResult.getSortedMap();
         resultToPrintNameToTime = readerResult.getNameToTimes();
 
         sb.append("---").append(file.getName()).append("---").append("\n");
