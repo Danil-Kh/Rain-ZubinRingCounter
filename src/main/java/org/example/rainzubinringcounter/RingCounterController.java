@@ -36,7 +36,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 @Controller
 public class RingCounterController {
@@ -101,9 +100,9 @@ public class RingCounterController {
             textArea.clear();
             File file = fileChooser.showOpenDialog(fileChooserButton.getScene().getWindow());
             if (isValidFile(file)) {
-               globalExceptionHandler.handleException(
-                       new IncorrectFileFormatException(ExceptionMessage.INCORRECT_FILE_FORMAT.getMessage()));
-               return;
+                globalExceptionHandler.handleException(
+                        new IncorrectFileFormatException(ExceptionMessage.INCORRECT_FILE_FORMAT.getMessage()));
+                return;
             }
             PrintAllInformationAboutTheFileInTextField(file, sb, null);
             safeCreateDocument(sb, file, true, newWordDoc, newFilePath, true);
@@ -115,7 +114,7 @@ public class RingCounterController {
             content.putString("file");
             db.setContent(content);
             event.consume();
-    });
+        });
         circleDrag.setOnDragOver(event -> {
             if (event.getGestureSource() != circleDrag &&
                     event.getDragboard().hasFiles()) {
@@ -143,7 +142,7 @@ public class RingCounterController {
                 ringReader.sortedHashMap.clear();
             }
         });
-}
+    }
     private void safeFileCreationFunctionCall(IOThrowingFunction function) {
         try {
             function.apply();
@@ -196,7 +195,7 @@ public class RingCounterController {
         }
 
         if (readerResultForSum != null) {
-            printRingToTextArea(stringBuilder, files.getFirst(), readerResultForSum, true);
+            printRingToTextArea(stringBuilder, files.getFirst(), readerResultForSum);
             int newlineIndex = stringBuilder.indexOf("\n");
             if (newlineIndex != -1) {
                 stringBuilder.delete(0, newlineIndex + 1);
@@ -227,11 +226,11 @@ public class RingCounterController {
             return;
         }
         ReaderResult readerResult = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
-        printRingToTextArea(stringBuilder, file, readerResult, false);
+        printRingToTextArea(stringBuilder, file, readerResult);
         displayErrors(file, eventDragboard, readerResult);
     }
 
-    private void printRingToTextArea(StringBuilder sb, File file, ReaderResult readerResult, Optional<Boolean> SumFileIsSelected) {
+    private void printRingToTextArea(StringBuilder sb, File file, ReaderResult readerResult) {
         Map<String, Integer> resultToPrintRing;
 
         Map<String, List<String>> resultToPrintNameToTime;
@@ -239,20 +238,19 @@ public class RingCounterController {
         resultToPrintNameToTime = readerResult.getNameToTimes();
 
         sb.append("---").append(file.getName()).append("---").append("\n");
-        for (String key : resultToPrintRing.keySet()) {
-            sb.append(key).append(": ").append(resultToPrintRing.get(key)).append("\n");
-            if (SumFileIsSelected.isEmpty())
-            {
-                sb.append(key).append(": ")
-                    .append(resultToPrintNameToTime.get(key)).append("\n");
-            }
 
+        if (resultToPrintNameToTime.isEmpty()) {
+            for (String key : resultToPrintRing.keySet()) {
+                sb.append(key).append(": ").append(resultToPrintRing.get(key)).append("\n");
+            }
+        }else {
+            for (String key : resultToPrintRing.keySet()) {
+                sb.append(key).append(": ").append(resultToPrintRing.get(key)).append("\n");
+                sb.append(key).append(": ").append(resultToPrintNameToTime.get(key)).append("\n");
+            }
         }
         textArea.clear();
         textArea.appendText(sb.toString());
-    }
-    private void printRingToTextArea(StringBuilder sb, File file, ReaderResult readerResult, boolean sumFileIsSelected) {
-        printRingToTextArea(sb, file, readerResult, Optional.of(sumFileIsSelected));
     }
 
     private boolean isValidFile(File file) {
