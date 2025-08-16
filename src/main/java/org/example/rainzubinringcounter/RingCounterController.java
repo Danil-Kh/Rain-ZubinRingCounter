@@ -36,6 +36,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 @Controller
 public class RingCounterController {
@@ -195,7 +196,7 @@ public class RingCounterController {
         }
 
         if (readerResultForSum != null) {
-            printRingToTextArea(stringBuilder, files.getFirst(), readerResultForSum);
+            printRingToTextArea(stringBuilder, files.getFirst(), readerResultForSum, true);
             int newlineIndex = stringBuilder.indexOf("\n");
             if (newlineIndex != -1) {
                 stringBuilder.delete(0, newlineIndex + 1);
@@ -226,11 +227,11 @@ public class RingCounterController {
             return;
         }
         ReaderResult readerResult = ringReader.reader(file.getAbsolutePath(), sumFile.isSelected());
-        printRingToTextArea(stringBuilder, file, readerResult);
+        printRingToTextArea(stringBuilder, file, readerResult, false);
         displayErrors(file, eventDragboard, readerResult);
     }
 
-    private void printRingToTextArea(StringBuilder sb, File file, ReaderResult readerResult) {
+    private void printRingToTextArea(StringBuilder sb, File file, ReaderResult readerResult, Optional<Boolean> SumFileIsSelected) {
         Map<String, Integer> resultToPrintRing;
 
         Map<String, List<String>> resultToPrintNameToTime;
@@ -240,10 +241,18 @@ public class RingCounterController {
         sb.append("---").append(file.getName()).append("---").append("\n");
         for (String key : resultToPrintRing.keySet()) {
             sb.append(key).append(": ").append(resultToPrintRing.get(key)).append("\n");
-            sb.append(key).append(": ").append(resultToPrintNameToTime.get(key)).append("\n");
+            if (SumFileIsSelected.isEmpty())
+            {
+                sb.append(key).append(": ")
+                    .append(resultToPrintNameToTime.get(key)).append("\n");
+            }
+
         }
         textArea.clear();
         textArea.appendText(sb.toString());
+    }
+    private void printRingToTextArea(StringBuilder sb, File file, ReaderResult readerResult, boolean sumFileIsSelected) {
+        printRingToTextArea(sb, file, readerResult, Optional.of(sumFileIsSelected));
     }
 
     private boolean isValidFile(File file) {
