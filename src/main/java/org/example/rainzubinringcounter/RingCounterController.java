@@ -8,6 +8,7 @@ import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.shape.Circle;
+import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import org.apache.poi.xwpf.usermodel.IBodyElement;
 import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
@@ -58,6 +59,10 @@ public class RingCounterController {
     public Circle circleDrag;
     @FXML
     public Button fileChooserButton;
+    @FXML
+    public Text javaVersionLabel;
+    @FXML
+    public Text appVersionLabel;
 
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss");
 
@@ -66,6 +71,12 @@ public class RingCounterController {
 
     @FXML
     private void initialize() {
+        loadAndDisplayAppVersion();
+
+        String javaVersion = RainZubinRingCounterApplication.getJavaVersion();
+        String javaVendor = System.getProperty("java.vendor");
+        javaVersionLabel.setText(String.format("Java: %s (%s)", javaVersion, javaVendor));
+
         sumFile.selectedProperty().addListener((obs, wasSelected, isNowSelected) -> {
             if (isUpdatingSelection) return;
 
@@ -402,4 +413,26 @@ public class RingCounterController {
             throw new IncorrectFileFormatException(ExceptionMessage.INCORRECT_FILE_FORMAT.toString());
         }
     }
+
+    /**
+     * Загружает и отображает версию приложения из application.properties
+     */
+    private void loadAndDisplayAppVersion() {
+        try (java.io.InputStream input = getClass().getClassLoader().getResourceAsStream("application.properties")) {
+            if (input == null) {
+                appVersionLabel.setText("App Version: Unknown");
+                return;
+            }
+
+            java.util.Properties prop = new java.util.Properties();
+            prop.load(input);
+
+            String version = prop.getProperty("app.version", "Unknown");
+            appVersionLabel.setText(String.format("App Version: %s", version));
+        } catch (IOException e) {
+            appVersionLabel.setText("App Version: Error loading");
+            System.err.println("Не удалось загрузить версию приложения: " + e.getMessage());
+        }
+    }
 }
+
