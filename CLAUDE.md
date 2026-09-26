@@ -34,6 +34,11 @@ Windows is the primary dev/target OS; use the wrapper. From the repo root:
    ⚠️ That config has **hard-coded absolute paths** (`C:\Java program\...\target\...jar` →
    `...\out\artifacts\...\test.exe`). Update `<jar>` and `<outfile>` to the current machine before
    generating the EXE. There is no CI step for the EXE — it is built by hand.
+   ⚠️ **Bundle a JRE.** The Launch4j `<jre>` block points at `%JAVA_HOME%;%PATH%` with
+   `minVersion 1.6.0_22`, so on a customer machine without a matching Java+JavaFX the EXE dies at launch
+   with **"A JNI error has occurred"** / **"A Java Exception has occurred"** (a JVM-launcher dialog, before
+   `main` runs — so the in-app Java-17 check never fires). Real deployments ship a **bundled JDK 21**
+   (verified in prod: **Eclipse Adoptium 21**, shown in the app footer). Do not assume the target has Java.
 
 # Architecture & Key Entry Points
 
@@ -46,8 +51,11 @@ Windows is the primary dev/target OS; use the wrapper. From the repo root:
 - **UI bootstrap:** `configuration/StageInitializer` listens for `StageReadyEvent`, loads
   `resources/ringcounter.fxml` (Scene 1300×600) and shows the stage.
 - **UI controller:** `RingCounterController` (`@Controller`) — owns the drag/drop circle, the two mutually
-  exclusive checkboxes (`sumFile` = aggregate all dropped files into one report; `splitFile` = one report
-  per file; default = combined-into-one-doc), text areas, and file chooser. Also builds output `.docx`.
+  exclusive checkboxes (UI labels **"Summarize files"** = `sumFile` = aggregate all dropped files into one
+  report; **"Split files"** = `splitFile` = one report per file, named `ring_<original>.docx`;
+  default/neither = all files combined into one `ring_All …` doc), text areas, and file chooser. The window
+  title is **"Ring Counter"**; the footer shows `App Version` (from `application.properties`) and the running
+  `Java` version+vendor. Also builds output `.docx`.
 - **Document engine (parsing):** `RingReader` (`@Service`) — reads a `.docx` with POI XWPF, branches on
   tables vs. paragraphs, validates time-codes (`\d{2}[:;,.]\d{2}`) and character names, and returns a
   `ReaderResult`.
@@ -100,6 +108,45 @@ Windows is the primary dev/target OS; use the wrapper. From the repo root:
   bad package casing) — `mvn javafx:run` will not work as-configured; run the real main class instead.
 - Env pin mismatch worth knowing: `pom.xml` targets **Java 21**, CI uses **Temurin 21**, but the runtime
   self-check only requires **Java 17**.
+
+# Input Format Contract (what the parser demands of a `.docx`)
+
+This app is used by an external dubbing studio; almost every support issue is an **input file that violates
+an implicit contract**, not a code crash. Before changing the parser, know the rules it enforces (a shared
+"rules doc" was given to the customer; these are the code-enforced parts):
+
+- **`.docx` only.** `.doc` is silently unsupported (surfaces as `IncorrectFileFormatException`).
+- **Two file shapes:** table-based files require the exact header row `ТАЙМ-КОД` / `ПЕРСОНАЖ` / `ТЕКСТ`
+  (`ТАЙМ-КОД` **with the hyphen**); paragraph-based files have no header. Wrong/missing header on a table
+  file → `TheHeaderTableException`.
+- **Time-code format is `MM:SS` only** — regex `\d{2}[:;,.]\d{2}` (separator `: ; , .`). **`HH:MM:SS`
+  (e.g. `00:00:35`) is NOT accepted** and yields `The sentence does not have a time code`. This is the
+  root cause of non-Naruto films (feature-length, `HH:MM:SS`) failing — a known, still-open limitation.
+- **Character names must be ALL-CAPS** — regex `^[\p{Lu}\p{N}\-_/.;:,]+$`. Lowercase → `does not have a
+  proper Name`. **Trailing digits ARE allowed** (`ЧОЛОВІК1`, `УЧЕНЬ2`) — that was an early bug, since fixed;
+  do not re-forbid them.
+- **Name and reply must be separated by a TAB**, not a newline. A reply starting on a new line →
+  `does not have a TAB`.
+- **One ring per table row**; two rings in one cell/row is unsupported. No empty cells / empty rows.
+- **No page breaks** inside the source — a `розрив сторінки` corrupts pagination of the generated report
+  (the "87 vs 89 series" two-column mess). Strikethrough/track-changes formatting also causes problems.
+
+The customer has asked (open feature request, Jan–Feb 2026) to **relax** the fixed header words and the
+all-caps name rule. Treat that as a deliberate design change — it touches core `RingReader` validation
+(`isValidTimeCode`, `isValidName`, `dealWithRingsInTable`) — not a quick tweak.
+
+# Known Production Issues (open as of this writing — customer-reported)
+
+- **Word "recover unreadable content" prompt on every generated report.** Word shows
+  *"виявлено непридатний для читання вміст … Відновити …?"* each time a `ring_*` / `sum_*` `.docx` is opened;
+  the user must click **Так/Yes**. The POI output in `RingCounterController.createDocument` is not fully
+  Word-clean (partial CTP/CTR copies, table `CTTbl` cloning). High-visibility annoyance for the studio's
+  director — customer wants it to "just open".
+- **HH:MM:SS time codes rejected** — see Input Format Contract. Blocks feature-length films.
+- **`Index 0 out of bounds for length 0`** Alert on some files — unguarded `words[0]`/`words[1]` access in
+  the paragraph path when a line splits to fewer tokens than expected.
+- **EXE launch failures on fresh machines** (`JNI error` / `A Java Exception has occurred`) — see the
+  Package-EXE guardrail above; mitigated by shipping a bundled JDK 21, not by app code.
 
 # Scope note
 Read-only inspection generated this file. Do not modify application source, the Launch4j config, or the
