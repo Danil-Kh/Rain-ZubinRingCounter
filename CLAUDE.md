@@ -61,7 +61,11 @@ Windows is the primary dev/target OS; use the wrapper. From the repo root:
   `ReaderResult`.
 - **Pipelines:**
   - *Scan/extract:* `RingReader.reader(path, calculateTheSumOfRings)` → `dealWithRingsInTable` /
-    `dealWithRingsInParagraph` → `validateRing`.
+    `dealWithRingsInParagraph` → `validateRing`. **The `calculateTheSumOfRings` boolean is the "Summarize
+    files" mode**, and it changes two things on purpose (a customer requirement, not a quirk): `true` keeps
+    `sortedHashMap` **accumulating across all dropped files** (the running total) and **skips the per-character
+    timecode list** (`nameToTimes`), because the summary doc wants totals only; `false` (default/Split modes)
+    **resets per file** and **records each character's timecodes**. Don't "fix" this asymmetry.
   - *Export:* `RingCounterController.createDocument(...)` copies source paragraph/table formatting and
     writes a new `.docx` to `~/Documents/GeneratedDocs` (created on demand). File names are
     `ring_*` / `ring_All *` / `sum_All *` plus a timestamp.
@@ -92,6 +96,14 @@ Windows is the primary dev/target OS; use the wrapper. From the repo root:
   from the assembly manifest scope). Keep using `@Getter/@Setter/@Builder/@Slf4j`; don't hand-write
   boilerplate it would generate.
 
+## Settled scope decisions (locked at kickoff — do not re-introduce)
+- **Windows-only desktop EXE, by design.** Web was rejected to avoid server costs; Mac is unsupported (at
+  best a raw `.jar` under Wine). Do not propose a web port, a server, or a Mac build.
+- **No authentication / login / user accounts.** Deliberately dropped — it is a single local tool. Don't add
+  password gates, licensing, or "admin vs user" roles.
+- **Batch size ~30 files** is the customer's practical ceiling (POI loads each fully); larger batches are
+  slow, not forbidden.
+
 ## Desktop application safety
 - Runtime is **fully offline**. Do not add network calls, telemetry, update checks, or web dependencies.
 - Output directory is hard-coded to `System.getProperty("user.home")/Documents/GeneratedDocs`. Treat all
@@ -119,6 +131,13 @@ an implicit contract**, not a code crash. Before changing the parser, know the r
 - **Two file shapes:** table-based files require the exact header row `ТАЙМ-КОД` / `ПЕРСОНАЖ` / `ТЕКСТ`
   (`ТАЙМ-КОД` **with the hyphen**); paragraph-based files have no header. Wrong/missing header on a table
   file → `TheHeaderTableException`.
+- **The first ring is the anchor.** In the paragraph path, `dealWithRingsInParagraph` ignores everything
+  until it sees the first line that is a valid `timecode + name`, then validates from there (`foundFirstRing`).
+  If the first ring is malformed, detection is thrown off for the whole file — the team's written rules tell
+  the studio the **first ring must be formatted perfectly**. Keep this invariant when editing the parser.
+- **Multi-word character names** (e.g. `МАЛИЙ НАРУТО`) are kept whole only because a **TAB** separates the
+  name from the reply; a parenthetical like `(тло)` is stripped (`name.split("(")[0]`). Missing TAB collapses
+  or mis-splits the name — historically the "Малий …" merge complaints. The TAB rule below is load-bearing.
 - **Time-code format is `MM:SS` only** — regex `\d{2}[:;,.]\d{2}` (separator `: ; , .`). **`HH:MM:SS`
   (e.g. `00:00:35`) is NOT accepted** and yields `The sentence does not have a time code`. This is the
   root cause of non-Naruto films (feature-length, `HH:MM:SS`) failing — a known, still-open limitation.
